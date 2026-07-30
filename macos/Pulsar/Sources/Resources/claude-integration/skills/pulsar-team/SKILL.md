@@ -263,6 +263,10 @@ the team think together.*
 
 Pattern: **diagnose → cross-reference → converge → act → re-review**, hardening between rounds. Each round writes files to the output directory.
 
+**Every generated `R*.md` file begins with this one-line header (the orchestrator puts it
+in every brief's output instructions; counsel's standing requirement):**
+`> Personas are fictional cognitive frames — see the pulsar-team SKILL.md §1 disclaimer. Nothing here is a statement by or about a real person.`
+
 ### Round 1 — Solo diagnoses (parallel, 8 agents)
 
 Each drone reads the target + required context and writes a solo critique from its lens. No coordination.

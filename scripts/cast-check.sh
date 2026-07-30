@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 # cast-check.sh — field-aware cast-consistency gate for the Pulsar drone
 # roster. Ratified R4 (Ship-now 3, 2026-07-30): the drone cast is a single
-# fact spread across nine files (skill doc, Swift registry, roster UI, the
-# frame-set PNGs, the spawn-categoriser regex, two build manifests, and the
-# fictional-personas disclaimer) — nothing enforced them agreeing until now.
+# fact spread across ten surfaces (skill doc, Swift registry, roster UI, the
+# frame-set PNGs, the spawn-categoriser regex, two build manifests, the
+# fictional-personas disclaimer, and the design/drones master art) — nothing
+# enforced them agreeing until now.
+#
+# v2 (R4, Nova): added check 10, the DESIGN-SURFACE gate — the master art's
+# dominant accent hue must match the registry colour literal. Added because
+# Atlas shipped blue-cyan art against a locked deep-grape literal for three
+# review rounds with no check able to see it.
 #
 # Ownership rule (D3, ratified): any red finding on a DESIGN surface
 # (persona names, blurbs, colours, frame art) is Nova's to fix on a 48h SLA.
@@ -159,6 +165,97 @@ hits = [name for name in DENYLIST if name.lower() in section1_lower]
 if hits:
     fail.append(f"§1 contains denylisted real-person name(s) (2026-07-30 removal list): {hits}")
 
+# --- 10. DESIGN-SURFACE: master art hue vs registry colour literal -----------
+# The registry colour literal is the drone's identity; design/drones/<cat>.png is
+# how a human actually experiences it. Nothing enforced them agreeing, and Atlas
+# drifted for three review rounds (art rendered blue-cyan at hue 225 while the
+# locked literal was deep grape #8040C0 at hue 270 — a 45 degree miss).
+#
+# Metric: downsample the master, keep only pixels that are actually carrying
+# accent colour (saturation >= 0.35, value >= 0.30 — the floor that still leaves
+# dark drones like meridian a usable sample), bucket their hues at 10 degrees and
+# take the modal bucket. Assert it is within HUE_TOL of the literal's hue.
+#
+# Pulsar has no design/drones master (his portrait is the frame set) — skipped.
+HUE_TOL = 35.0          # degrees; whole cast passes, pre-fix Atlas measured 45.0
+SAT_MIN, VAL_MIN = 0.35, 0.30
+BUCKET = 10
+MIN_SAT_PX = 500        # below this the modal bucket is noise, not a signal
+
+design_dir = pathlib.Path(repo_root) / "design" / "drones"
+
+reg_colors = dict(
+    (c, (float(r), float(g), float(b)))
+    for c, r, g, b in re.findall(
+        r'Drone\(category:\s*"([a-zA-Z0-9_]+)".*?'
+        r'color:\s*Color\(red:\s*([0-9.]+),\s*green:\s*([0-9.]+),\s*blue:\s*([0-9.]+)\)',
+        registry, re.S)
+)
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+
+if Image is None:
+    # A design gate that cannot see the art must never report PASS on it, but a
+    # missing dependency is not a red DESIGN finding either — say so loudly.
+    hue_report = None
+else:
+    import colorsys
+
+    def hue_of(rgb):
+        return colorsys.rgb_to_hsv(*rgb)[0] * 360.0
+
+    def dominant_accent_hue(path):
+        im = Image.open(path).convert("RGB")
+        im.thumbnail((220, 220), Image.LANCZOS)
+        hist = {}
+        for r, g, b in im.getdata():
+            h, s, v = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
+            if s >= SAT_MIN and v >= VAL_MIN:
+                key = int(h * 360.0) // BUCKET
+                hist[key] = hist.get(key, 0) + 1
+        if not hist:
+            return None, 0
+        top = max(hist, key=hist.get)
+        return top * BUCKET + BUCKET / 2.0, sum(hist.values())
+
+    def hue_delta(a, b):
+        d = abs(a - b) % 360.0
+        return min(d, 360.0 - d)
+
+    hue_report = []
+    for cat in sorted(registry_set):
+        if cat == "pulsar":
+            continue
+        master = design_dir / f"{cat}.png"
+        if not master.is_file():
+            fail.append(f"[DESIGN-SURFACE] missing drone master art: {master}")
+            continue
+        want = hue_of(reg_colors[cat])
+        got, n_sat = dominant_accent_hue(master)
+        if got is None or n_sat < MIN_SAT_PX:
+            fail.append(
+                f"[DESIGN-SURFACE] {cat}.png has too few saturated pixels "
+                f"({n_sat} < {MIN_SAT_PX}) to read an accent hue — the art has no "
+                f"legible accent colour."
+            )
+            continue
+        delta = hue_delta(want, got)
+        hue_report.append((cat, want, got, delta, n_sat))
+        if delta > HUE_TOL:
+            fail.append(
+                f"[DESIGN-SURFACE] {cat}: master art hue disagrees with the "
+                f"DroneRegistry.swift colour literal.\n"
+                f"    registry: hue {want:.1f} deg  "
+                f"(r {reg_colors[cat][0]}, g {reg_colors[cat][1]}, b {reg_colors[cat][2]})\n"
+                f"    art:      hue {got:.1f} deg  ({master.name}, {n_sat} accent px)\n"
+                f"    delta:    {delta:.1f} deg  > tolerance {HUE_TOL:.0f} deg\n"
+                f"    D3 ownership: red on a DESIGN surface -> Nova, 48h SLA. Fix the\n"
+                f"    art to match the code (or land a ratified colour change in both)."
+            )
+
 # --- Report ------------------------------------------------------------------
 if fail:
     sys.stderr.write("cast-check: FAIL — cast is inconsistent\n\n")
@@ -169,7 +266,24 @@ if fail:
 print("cast-check: PASS")
 print(f"  registry categories ({len(registry_set)}): {', '.join(sorted(registry_set))}")
 print(f"  §1 drones ({len(skill_names)}): {', '.join(sorted(skill_names))}")
-print("  all 9 checks agree: §1 headings, registry, roster blurbs, frame PNGs,")
+print("  9 of 10 checks agree (check 10 did not run, see below):" if hue_report is None
+      else "  all 10 checks agree: §1 headings, registry, roster blurbs, frame PNGs,")
+if hue_report is None:
+    print("  §1 headings, registry, roster blurbs, frame PNGs,")
 print("  CAST regex, Package.swift copies, build-pulsar-app.sh copies,")
-print("  fictional-personas disclaimer, real-person-name denylist")
+print("  fictional-personas disclaimer, real-person-name denylist,")
+print("  DESIGN-SURFACE master-art hue vs registry colour literal")
+
+if hue_report is None:
+    print()
+    print("  !! check 10 (DESIGN-SURFACE art hue) NOT RUN — Pillow is not installed.")
+    print("     The other 9 checks passed, but the art-vs-code colour gate did not")
+    print("     execute. Install it (`python3 -m pip install Pillow`) to close the gap.")
+else:
+    print()
+    print(f"  DESIGN-SURFACE hue margins (tolerance ±{HUE_TOL:.0f}°, D3 → Nova, 48h SLA):")
+    for cat, want, got, delta, n_sat in sorted(hue_report, key=lambda r: -r[3]):
+        bar = "tight" if delta > HUE_TOL * 0.75 else "ok"
+        print(f"    {cat:<9} registry {want:6.1f}°  art {got:6.1f}°  "
+              f"Δ {delta:5.1f}°  [{bar}]")
 PYEOF

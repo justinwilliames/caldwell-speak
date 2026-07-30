@@ -1356,7 +1356,7 @@ is in there, so nothing is buried.
 
 | Code | Licence | Carried by | Upstream |
 |---|---|---|---|
-| BoringSSL (vendored C, symbol-prefixed) | Combination ISC and OpenSSL licence | SwiftNIO SSL (`CNIOBoringSSL`), SwiftCrypto (`CCryptoBoringSSL`) | <https://boringssl.googlesource.com/boringssl/+/refs/heads/master/LICENSE> |
+| BoringSSL (vendored C, symbol-prefixed) | Combination ISC and OpenSSL licence | SwiftNIO SSL (`CNIOBoringSSL`), SwiftCrypto (`CCryptoBoringSSL`) | upstream licence text vendored at [`third-party-licenses/BoringSSL-LICENSE.txt`](third-party-licenses/BoringSSL-LICENSE.txt) |
 | llhttp (Node.js HTTP parser) | MIT | SwiftNIO (`CNIOLLHTTP`) | <https://github.com/nodejs/llhttp/blob/1e1c5b43326494e97cf8244ff57475eb72a1b62c/LICENSE-MIT> |
 | zlib (vendored, symbols prefixed `cnioextras_z_`) | zlib licence | SwiftNIO Extras (`CNIOExtrasZlib`) | <https://www.zlib.net/zlib_license.html> |
 | `sha1.c` / `sha1.h` — Copyright (C) 1995, 1996, 1997, 1998 WIDE Project | BSD-3-Clause | SwiftNIO (`CNIOSHA1`) | <https://github.com/freebsd/freebsd-src> |

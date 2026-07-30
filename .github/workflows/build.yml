@@ -66,5 +66,8 @@ jobs:
       - name: Run tests
         run: ./scripts/run-tests.sh
 
+      - name: Install Pillow (cast-check design-surface assertion)
+        run: python3 -m pip install --quiet Pillow
+
       - name: Cast-consistency check
         run: ./scripts/cast-check.sh
