@@ -227,22 +227,24 @@ func runAll() async {
         await expect(await actor.sweepStaleDrones(now: Date()) == nil, "second sweep → nil")
     }
 
-    // MARK: - Mute: immediate silence (BUG 2)
+    // MARK: - Mute: immediate silence, held queue (BUG 2 + 2026-07-30 revision)
     //
     // `muteNow` is the actor half of the immediate-mute path: kill the current
-    // playback (no live process in a test, so that's a no-op) AND drop every
-    // still-queued waiter so nothing sounds while muted. We seed the queue via the
-    // same `_test_appendQueuedCategory` seam the deferral tests use (appends
-    // without starting the real afplay worker) and assert the queue is emptied.
+    // playback (no live process in a test, so that's a no-op) while HOLDING every
+    // still-queued waiter. Mute is pause, not destruction — a parallel session's
+    // brief mute/unmute dance must not vaporise another session's queued run (the
+    // second roll-call killer). Silence-while-muted is enforced by the worker's
+    // pause + playEntry's mute-gate, not by dropping the queue; a LONG mute still
+    // self-clears via the progress-gated stale purge.
 
-    await test("muteNow drops all queued lines (immediate silence)") {
+    await test("muteNow HOLDS queued lines (mute is pause, not destruction)") {
         let (actor, _) = await makeActor()
         await actor._test_appendQueuedCategory("voyager")
         await actor._test_appendQueuedCategory("nova")
         await actor._test_appendQueuedCategory("echo")
         await expect(await actor._test_queueDepth() == 3, "three lines queued")
         await actor.muteNow()
-        await expect(await actor._test_queueDepth() == 0, "muteNow cleared the queue")
+        await expect(await actor._test_queueDepth() == 3, "muteNow held all queued lines for unmute")
     }
 
     await test("muteNow on an empty queue is a safe no-op") {
@@ -404,8 +406,18 @@ func runAll() async {
         await actor._test_enqueue(entry("old-normal", priority: false, agedSeconds: 90))
         await actor._test_enqueue(entry("old-priority", priority: true, agedSeconds: 90))
         await actor._test_enqueue(entry("ancient-priority", priority: true, agedSeconds: 200))
-        // The purge runs at the head of the next insertion.
+        // BUSY ≠ WEDGED (2026-07-30 roll-call bug): while playback is making
+        // progress the purge must NOT fire — aged waiters are in line, not
+        // stragglers. Drain progress is fresh here (actor just created), so this
+        // insertion's purge pass must be a no-op even for the 200s entry.
         await actor._test_enqueue(entry("fresh", priority: false, agedSeconds: 0))
+        let busyOrder = await actor._test_queueIds()
+        await expect(busyOrder.contains("old-normal"), "90s normal SURVIVES while draining (busy ≠ wedged)")
+        await expect(busyOrder.contains("ancient-priority"), "200s priority SURVIVES while draining")
+        // Now the queue goes QUIET past the staleness window — a wedge. The
+        // purge regains its teeth at the next insertion.
+        await actor._test_ageDrainProgress(seconds: 90)
+        await actor._test_enqueue(entry("fresh-2", priority: false, agedSeconds: 0))
         let order = await actor._test_queueIds()
         await expect(!order.contains("old-normal"), "90s normal purged (60s ceiling)")
         await expect(order.contains("old-priority"), "90s priority SURVIVES (180s ceiling)")

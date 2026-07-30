@@ -736,6 +736,10 @@ final class PulsarHTTPServer: @unchecked Sendable {
                 // that's already sounding through afplay/say.
                 if muted {
                     await audioQueue.muteNow()
+                } else {
+                    // Unmute resumes any lines held through the mute (mute is
+                    // pause, not destruction — see muteNow).
+                    await audioQueue.resumeAfterUnmute()
                 }
             }
             if let expletives = update.expletives_enabled {

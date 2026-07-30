@@ -241,6 +241,11 @@ actor AudioQueueActor {
 
     private var queue: [AudioEntry] = []
     private var workerRunning = false
+
+    /// Last moment playback made observable progress (a line started or
+    /// finished). The stale-waiter purge is gated on this going quiet for a
+    /// full staleness window — busy-and-draining never purges, wedged does.
+    private var lastDrainProgressAt = Date()
     private var currentProcess: Process?
     private var currentEntry: AudioEntry?
 
@@ -624,6 +629,13 @@ actor AudioQueueActor {
     /// Waiting-queue ids in order, for asserting the priority-lane ordering.
     func _test_queueIds() -> [String] { queue.map(\.id) }
 
+    /// Age the drain-progress marker so purge tests can simulate a QUIET/WEDGED
+    /// queue (no line started or finished for `seconds`). Without this the purge
+    /// is gated off — a busy, draining queue never expires its waiters.
+    func _test_ageDrainProgress(seconds: TimeInterval) {
+        lastDrainProgressAt = Date().addingTimeInterval(-seconds)
+    }
+
     /// Test seam: the exact enqueue insertion + purge path WITHOUT starting the
     /// playback worker (ordering asserts must not race a consuming worker).
     /// Preserves the entry's `enqueuedAt` so purge-ceiling tests can age entries.
@@ -731,6 +743,18 @@ actor AudioQueueActor {
     /// bare count made drops undiagnosable (2026-07-06 voice audit §4).
     @discardableResult
     private func purgeStaleWaiters(now: Date = Date()) -> Int {
+        // BUSY ≠ WEDGED (2026-07-30, the roll-call bug): a queue that is actively
+        // playing and completing lines is healthy — its waiters are in line, not
+        // stragglers, and purging them by wall-clock age silently ate the tail of
+        // any multi-drone burst longer than ~60s of speech (a nine-voice sound-off
+        // lost everything after line five). Staleness may only fire when playback
+        // has stopped MAKING PROGRESS: no line has started or finished for a full
+        // staleness window. A wedged queue (hung synthesis, stuck completion)
+        // still self-clears exactly as before — that is the case the purge exists
+        // for — but a busy one now drains every line it accepted.
+        if now.timeIntervalSince(lastDrainProgressAt) <= Self.staleWaiterSeconds {
+            return 0
+        }
         var dropped: [AudioEntry] = []
         queue.removeAll { entry in
             let ceiling = entry.priority
@@ -804,19 +828,29 @@ actor AudioQueueActor {
     /// it here) and idles. Unmute simply resumes normal behaviour for new lines.
     func muteNow() {
         currentProcess?.terminate()
+        // MUTE IS PAUSE, NOT DESTRUCTION (2026-07-30): queued lines are HELD,
+        // not dropped — the worker pauses on its next iteration and
+        // resumeAfterUnmute() re-arms it. This is what makes the daemon safe to
+        // share between parallel Claude sessions: one session's brief
+        // mute/unmute dance no longer vaporises another session's queued run
+        // (the second roll-call killer, after the stale-purge tail-drop). A
+        // LONG mute still self-clears: no drain progress while paused, so once
+        // quiet exceeds the staleness window the progress-gated purge takes the
+        // aged waiters on the next enqueue — unmute after lunch does not replay
+        // a stale backlog.
         if !queue.isEmpty {
-            // Unlink any synth temp AIFF the dropped waiters already produced, and
-            // clear their resolved/failed bookkeeping, so a mute never leaks temp
-            // files to disk (mirrors purgeStaleWaiters' cleanup).
-            for entry in queue {
-                readyContinuations.removeValue(forKey: entry.id)
-                discardResolved(id: entry.id)
-            }
-            NSLog("[AudioQueue] 🔇 muteNow — killed current playback + dropped \(queue.count) queued line(s)")
-            queue.removeAll()
+            NSLog("[AudioQueue] 🔇 muteNow — killed current playback; \(queue.count) queued line(s) HELD for unmute")
         } else {
             NSLog("[AudioQueue] 🔇 muteNow — killed current playback")
         }
+    }
+
+    /// Re-arm the worker after an unmute if lines were held through the mute.
+    func resumeAfterUnmute() {
+        guard !queue.isEmpty, !workerRunning else { return }
+        NSLog("[AudioQueue] 🔊 unmute — resuming \(queue.count) held line(s)")
+        workerRunning = true
+        Task { await self.runWorker() }
     }
 
     func setBroadcaster(_ broadcaster: any SSEBroadcasterProtocol) {
@@ -907,6 +941,14 @@ actor AudioQueueActor {
         NSLog("[AudioQueue] 🔁 runWorker START (queue=\(queue.count))")
         var firstLine = true
         while !queue.isEmpty {
+            // PAUSE while muted — do not drain-and-drop. Held lines survive a
+            // transient mute; resumeAfterUnmute() (or any new enqueue) re-arms.
+            if PulsarConfig.shared.isMuted {
+                NSLog("[AudioQueue] ⏸ worker pausing — muted, \(queue.count) line(s) held")
+                workerRunning = false
+                return
+            }
+
             // Sweep stale waiters each iteration so a straggler can't sit forever
             // when nothing new is being enqueued to trigger the enqueue-time purge.
             purgeStaleWaiters()
@@ -940,6 +982,7 @@ actor AudioQueueActor {
                 source = "nil — awaiting fetch"
             }
             NSLog("[AudioQueue] ⬇️ dequeue \(entry.id) '\(entry.text.prefix(40))' audioURL=\(source) remaining=\(queue.count)")
+            lastDrainProgressAt = Date()
 
             // Wait for the fetch ONLY if the URL still isn't available and the
             // fetch hasn't already failed. Race-free: the pre-resolved/pre-failed
@@ -988,6 +1031,7 @@ actor AudioQueueActor {
             }
 
             NSLog("[AudioQueue] ⏹ done \(entry.id); \(queue.count) waiting")
+            lastDrainProgressAt = Date()
         }
         currentEntry = nil
         // Clear the running flag LAST, then re-check: an enqueue that raced in
