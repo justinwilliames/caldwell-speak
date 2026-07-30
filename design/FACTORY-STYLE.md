@@ -364,3 +364,111 @@ gear. All §F gates green. Provenance recorded.
    unfounded — a lit glass element beats a drawn ring at small size.
 7. **Run gens BACKGROUNDED.** The foreground shell timed out at 10 minutes while
    codex kept working and still wrote the file.
+
+---
+
+# REV 8 — FULL CHARACTER REDESIGN (Justin's brief, 2026-07-30 ~21:30, overnight run)
+
+**This supersedes the "face-only" scope of Rev 5-7.** Justin's brief verbatim:
+
+> "Make sure by the morning I have all 9 designed, fully mechanical movement in the
+> mouth (as in it should properly open/close — think iron man or transformers how it
+> all properly moves) and I want them to still all be approachable / friendly and
+> aligned to their personalities. Also Pulsar needs a redesign too. Also all 9 of
+> them should be visually distinct with different accessories, accent colour, helmet
+> shapes/styles, and accessories/textures in or on their armor (i.e. i like voyagers
+> little red scarf and novas leatheresque shoulder pads). Also make sure that the new
+> characters still blink when passive it makes them feel alive. Also make sure that
+> they all have glowing orbs in the centre of their chest and that they each have
+> glowing accents/items so they feel powered up somewhat. Nova is a good example of
+> this. Also make sure that their armor and accessories clearly matches their role.
+> You also do have the freedom to completely redesign their aesthetic if you think
+> that it is warranted. And when I say Aesthetic i mean their helmet shapes,
+> character, accessories, colour, etc - keep the art style we agreed on that you have
+> been building now."
+
+## R8.1 — Scope: ALL NINE get a full redesign
+voyager · sentinel · nova · nebula · echo · iris · atlas · meridian · **pulsar**.
+Rev 5-7's approved face-only masters are NO LONGER FINAL — they are inputs at best.
+**Voyager is no longer sacred as an untouched master**; he is redesigned too. What
+survives from him is the *art style* (materials, lighting, render quality) and his
+own identity cues (amber, scarf, lamp, prospector read).
+
+## R8.2 — KEEP THE AGREED ART STYLE (non-negotiable)
+The house look built across Rev 5-7 stays: matte brushed metal with real panel seams
+and fasteners, physical anodised accent metal (not neon tape), a **fully machined
+face** (no screens, no glass domes, nothing drawn on), mechanical iris eyes **with a
+dark central pupil**, one real specular on real glass, deep navy gradient vignette
+background (corners ≈#02031A ±14), warm key upper-left + cool rim behind-right,
+shallow depth of field, tight hero crop with the head uncropped and a 3-8% margin
+above the crown, torso off the bottom edge. Premium 3D, Pixar/Apple-keynote grade.
+**Freedom applies to the CHARACTER (helmet, silhouette, accessories, gear, textures,
+accent hue), NOT to the rendering language.**
+
+## R8.3 — MOUTH: properly mechanical, Iron Man / Transformers grade
+The mouth is a **multi-part machined mechanism that visibly TRANSFORMS between
+closed and open** — interlocking plates that slide, hinge and separate, with visible
+pivots, tracks, linkages and interior structure revealed as it opens. Not a grille.
+Not a lit slot. Not an outline whose fill brightens.
+- **Frame 0 = fully CLOSED:** plates seated together, a tight parting seam, minimal
+  interior light. It should look sealed.
+- **Frame 4 = fully OPEN:** plates clearly swung/slid apart, the interior cavity deep
+  and lit, mechanism (pivots/linkage) visible in the gap.
+- Frames 1-3 are genuine intermediate positions of the same hardware.
+The test: flip 0→4 and it must read as a machine **operating**, the way an Iron Man
+faceplate or a Transformers panel sequence reads.
+
+## R8.4 — BLINK IS MANDATORY (passive liveness)
+Every unit keeps a blink frame, and blink = **the mechanical iris aperture blades
+closing over the pupil** (or a machined lid plate sweeping down), not the eye
+switching off. The app fires blinks during pauses; this is what makes them feel
+alive when idle. A cast that doesn't blink is a cast of statues.
+
+## R8.5 — POWERED-UP: chest orb + glowing accents, every unit
+- **Every drone has a GLOWING ORB at the CENTRE OF ITS CHEST** — a recessed spherical
+  or lensed core emitting in that drone's accent hue, with visible housing, ring and
+  interior depth. Nova's fusion core is the reference.
+- **Every drone has additional glowing accents/items** so it reads as powered up:
+  emitter beads, lit seams in recesses, an illuminated tool or instrument, lit vents.
+  Enough to feel energised — but the accent metal still dominates over emission, and
+  §D's "no glowing bars on the face other than eyes and mouth interior" holds.
+
+## R8.6 — APPROACHABLE AND FRIENDLY, per personality
+The machined direction must NOT read cold or hostile. All nine stay **approachable**;
+they differ in *how* warm. Expression is still geometry (brow rake, mouth cant, iris
+openness — §C's EXPRESSION table stands), but the floor is friendly: even Meridian
+and Sentinel read as composed and trustworthy rather than menacing. If a render
+looks like a threat, it fails.
+
+## R8.7 — VISUAL DISTINCTNESS: five axes, no two units alike
+Each drone must differ from all others on ALL of these:
+1. **Helmet shape/style** — silhouette must be unique and readable as a black shape
+   at 52px (crest, dome, faceted crown, dish, halo, swoop, yoke, gorget, hood…).
+2. **Accent hue** — the registry literal, ≥15° apart (§F2).
+3. **Accessories/gear** — role-specific, listed per drone in §C.
+4. **Texture/material accents on the armour** — the thing Justin singled out:
+   *"i like voyagers little red scarf and novas leatheresque shoulder pads."* Every
+   unit needs at least one distinctive non-metal material with real character, and
+   no two units may share one. (Running list in §J.6 — extend it, never reuse.)
+5. **Armour silhouette weight** — heavy/ceremonial through light/agile.
+
+## R8.8 — ARMOUR AND GEAR MUST MATCH THE ROLE (read at a glance)
+A stranger should be able to guess the job from the kit:
+| Drone | Role | Armour + gear direction |
+|---|---|---|
+| voyager | explorer / data scout | expedition rig: forehead lamp, amber goggles pushed up, the red scarf, webbing, sample pouches, worn plating |
+| sentinel | reviewer / security | inspector's plate: scanner optic, precise clean armour, minimal wear, a tick/verified insignia, hard chamfers |
+| nova | builder | workshop rig: leather-ish shoulder pads, torch/welder, tool hose, fusion core, scuff-free factory-fresh plate |
+| nebula | creative director | atelier rig: prismatic visor element, brush, linen apron, cork grip, paint-flecked plate, the visible hand |
+| echo | growth / comms | comms rig: dish, boom mic, foam windscreen, braided cable, waveform plates, lightest armour, youngest read |
+| iris | marketing | signal rig: halo ring, orbiting channel charms, felt gasket, elegant poised plate |
+| atlas | UX / all-rounder | field-generalist rig: twin antennae, flow-path badge, leather tool roll, waxed canvas, broad steady plate |
+| meridian | counsel | **honour-guard plate (NOT a suit)** — heaviest, most formal, high gorget collar, white ceramic inlay strips, cast-brass scales badge, one engraved gold line |
+| pulsar | host / orchestrator | **conductor's rig — REDESIGN REQUIRED.** He must read as the one in charge and the friendliest: a distinctive crest or crown that says host, indigo, suede ear cushions, knitted collar, the four-point star as a lit chest orb. Most approachable face in the cast. |
+
+## R8.9 — Order of work (overnight)
+Pilot **Meridian** first (biggest change: armour + framing + face + mechanism). Then
+**Pulsar** (most-seen, full redesign). Then voyager, sentinel, nova, nebula, echo,
+iris, atlas. One unit per turn, sequential gens, backgrounded, ≤4 attempts each,
+MAX THREE DELTAS PER RETRY. Then frames (§E4 sheet + cv2 ECC, gates in §E4.5/4.6),
+then assets, then verify. `git push` is GATED — halt and notify.
