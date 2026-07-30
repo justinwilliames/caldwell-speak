@@ -1,4 +1,4 @@
-# Pulsar drone factory style — Rev 2 (hardened)
+# Pulsar drone factory style — Rev 4 (hardened + pilot-corrected + build-corrected)
 
 **Reference master: `design/drones/voyager.png`.** Justin's ruling (2026-07-30):
 *"Voyager is still the best one and should be the reference. They should look like
@@ -47,7 +47,7 @@ gear, silhouette and props. Only the *finish* changes.
 8. **One light source.** Warm key from upper-left, cool rim from behind-right,
    shallow depth of field. Both eye catchlights sit at the **upper-RIGHT of the pupil (~1-2 o'clock)**, identical in both eyes — measured off the reference master, which is where the house look actually is. (Rev 2 said 10 o'clock; the pilot proved that is achievable but moves the drone AWAY from Voyager. Reference measured 2026-07-30.)
 9. **Background: deep navy gradient vignette.** Corners ≈ `#02031A`, centre-behind-head ≈ `#1A2550`, tolerance ±14 per channel. Never hue-matched to the drone. (Re-baselined from the reference: voyager.png corners measure (2,3,23) and (1,2,25) — Rev 2's `#0B1230` was unreachable, four escalating attempts never got past (6,10,34).)
-10. **Framing: shoulders and torso run off the LEFT, RIGHT and BOTTOM edges; the head is NEVER cropped.** The complete crown and any antenna tip sit inside the frame with a thin margin above. (Rev 2 demanded all four edges; the reference itself touches only the bottom — top 0, left 0, right 0, bottom 124. Fill comes from the torso, never from slicing the skull.)
+10. **Framing: the torso runs off the BOTTOM edge and the head is NEVER cropped**, with a thin margin (3-8%) above the crown; side gaps may be small but need not be zero. The complete crown and any antenna tip sit inside the frame with a thin margin above. (Rev 2 demanded all four edges; the reference itself touches only the bottom — top 0, left 0, right 0, bottom 124. Fill comes from the torso, never from slicing the skull.)
 
 ## B. MUST VARY — or the cast becomes nine identical robots
 
@@ -151,8 +151,7 @@ Run over all eight in one pass (~40 lines of numpy):
    sits at Δ32.8° — it must be brought inside tolerance by its own re-render, not
    by loosening the gate.
 2. **Cross-drone distinctness: ≥15°** from every other registry literal. (Rev 2 said 40°, which is mathematically impossible for this palette before a single render: sentinel↔meridian 15.2°, meridian↔pulsar 15.4°, sentinel↔echo 26.8°, sentinel↔pulsar 30.5°, atlas↔pulsar 35.5°. In the blue cluster, separation is carried by SILHOUETTE, not hue — which is why §B1 is mandatory.)
-3. **Identity distance from the previous master, banded `0.15 ≤ d ≤ 0.55`.**
-   Below = nothing actually changed; above = identity drifted.
+3. **Identity distance — RETIRED as an absolute band.** The 0.15-0.55 band was estimator-undefined and unusable: measured with mean per-pixel RGB L2 at 128px, the approved pilot scores 0.178 and two ENTIRELY DIFFERENT drones score only 0.238, so nothing can reach 0.55. Replaced by a relative reading: the re-render should land at **60-100% of the approved pilot's transformation magnitude** on whatever estimator the builder states. State the estimator; quote the number.
 4. **Background: corner pixels navy** within §A9 tolerance.
 5. **Framing: subject touches the BOTTOM edge; thin margin above the crown; head uncropped** (see §A10 as amended).
 6. **Thumbnail acceptance:** downsample to 52px — the drone must be identifiable
@@ -183,3 +182,35 @@ Seven re-rendered drones (Pulsar conditional, Voyager untouched) viewed **eight-
 at 128px and again at 52px**: one cast, same materials, same lighting, same
 background, same construction — distinguishable instantly by colour, silhouette and
 gear. All §F gates green. Provenance recorded.
+
+---
+
+## I. Build lessons — binding on every remaining render (from the first three)
+
+1. **The canonical template is `prompt-a4.txt`, not `prompt-a2.txt`.** a4 is the
+   hardened pilot prompt (explicit mouth pixel sizing, per-unit mouth shape, harder
+   framing). Anyone templating from a2 ships a weaker mouth. *(Echo caught this
+   after the orchestrator pointed two builders at the wrong file.)*
+2. **MAX THREE DELTAS PER RETRY.** The generator has a fixed attention budget:
+   bundling six re-render instructions made it DROP house-block items it had already
+   nailed — the mouth and the anti-float rule go first. Echo's a2 regressed both
+   things a1 got right. Fix ≤3 things, re-render, repeat.
+3. **The template's §A8/§A9 text is STALE (Rev 2) — flip §A8 when you use it.**
+   It demands the 10 o'clock catchlight and forbids upper-right, the exact inverse of
+   §A8 as amended. Flip it. §A9's stale near-black wording is deliberately KEPT: it
+   empirically lands corners inside the Rev 3+ band (4/4 on two drones), whereas
+   asking for the literal target risks crushing below the blue floor.
+4. **Eye brilliance fights hue discipline.** Asking for bigger/brighter eyes pulled
+   Nova's whole green family yellow-ward and blew the hue gate. The safe delta is
+   geometric only: *"the ring is a larger circle of the SAME colour — do not brighten
+   or shift it."*
+5. **Mask the backdrop before measuring hue.** A naive dominant-hue estimator counts
+   a brightened background into the saturated-pixel set and reports nonsense (151°
+   for a render that was actually 93°). Reusable tools left in the scratchpad:
+   `hue2.py` (backdrop-masked) and `measure.py`. Report the MODAL hue — that is what
+   §F1 names.
+6. **Vary the non-metal parts per drone.** Naming specific parts is mandatory (a
+   generic "add a non-metal material" produced nothing at all); reusing another
+   drone's parts is a factory-clone failure. Used so far: Sentinel = rubber
+   concertina neck boot + woven ballistic collar; Nova = quilted shoulder pad +
+   ribbed rubber torch hose; Echo = open-cell foam windscreen + braided cable sleeve.
