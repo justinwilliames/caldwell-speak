@@ -157,6 +157,20 @@ jobs:
           done
           chmod +x "$CI_STAGE/scripts/"*.sh 2>/dev/null || true
 
+          # The pulsar-team skill (the 9-drone review team). The Swift installer
+          # copies this into ~/.claude/skills/pulsar-team, but only if the payload
+          # contains it — and this workflow, which builds EVERY public-release
+          # DMG, never staged it. So the "DMG users finally get /pulsar-team" fix
+          # was inert for every real download until this block existed
+          # (adversarial review 2026-07-30). Mirrors build-pulsar-app.sh:44-50.
+          mkdir -p "$CI_STAGE/skills/pulsar-team/scripts"
+          cp pulsar-team/SKILL.md "$CI_STAGE/skills/pulsar-team/SKILL.md"
+          cp pulsar-team/scripts/*.sh "$CI_STAGE/skills/pulsar-team/scripts/" 2>/dev/null || true
+          chmod +x "$CI_STAGE/skills/pulsar-team/scripts/"*.sh 2>/dev/null || true
+          # Fail loudly rather than shipping another silently-inert payload.
+          test -s "$CI_STAGE/skills/pulsar-team/SKILL.md" \
+            || { echo "::error::pulsar-team skill missing from the DMG payload"; exit 1; }
+
           # Embed Sparkle.framework. The binary loads @rpath/Sparkle.framework
           # and carries an @executable_path/../Frameworks rpath (set in
           # Package.swift), so the framework must live at Contents/Frameworks

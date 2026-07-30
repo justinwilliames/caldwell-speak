@@ -1,0 +1,28 @@
+# Cycle 3 — Voyager (auditor of cycle 2 claims), commit 762069e
+
+**Verdict:** Not dry. Cycle 2's headline fix — DMG users finally get `/pulsar-team` — is
+**inert in production**. The Swift installer and the local build script were fixed; the
+actual CI pipeline that produces every public-release DMG (`package-dmg.yml`) was never
+touched, so the exact population the fix targeted still doesn't get it. Everything else
+checked out clean or mutation-verified.
+
+## Per-claim table
+
+| # | Claim | Verdict | Evidence |
+|---|---|---|---|
+| 1 | Installer copies pulsar-team as a discoverable sibling skill | **INCOMPLETE — production-breaking** | `ClaudeIntegrationInstaller.swift:214-232` correctly computes `skillDir.deletingLastPathComponent()/pulsar-team` (sibling of `skills/pulsar`) and copies SKILL.md + scripts, guarded by a silent `if fm.fileExists(teamSrc)`. `build-pulsar-app.sh:44-50` stages the source before `swift build`, so **local builds work**. But `.github/workflows/package-dmg.yml` — the job that actually produces GitHub Release DMGs — has its own independent staging block (~140 lines in) that `mkdir`s `Contents/Resources/claude-integration/scripts`, copies SKILL.md/CANON.md/voices.json + a hardcoded 10-script list straight from repo root, and **never references `pulsar-team`**: `grep -n "pulsar-team" .github/workflows/package-dmg.yml` → no match. It doesn't even reuse the SPM-copied resource bundle where the tracked `skills/pulsar-team/` files would otherwise ride along. Because the Swift-side check is a silent no-op on missing source, every DMG-installed user who clicks Setup still never gets `/pulsar-team` — the identical symptom the fix was written to kill, moved one layer upstream. |
+| 2 | uninstall-hooks.sh reverses all 6 hooks | **VERIFIED (behavior) / INCOMPLETE (docs)** | Ran the real script against a throwaway settings file (`CLAUDE_SETTINGS=/tmp/.../fake-settings.json`, never touched `~/.claude/settings.json`) synthesising all 6 managed hooks + 2 unrelated third-party hooks + statusLine. Output: all 6 Pulsar entries removed (`SubagentStart/Stop`, `Stop→stop-hook.sh`+`chime.sh`, `UserPromptSubmit`, `SessionStart`); both unrelated hooks (`unrelated-stop.sh`, `claudata-substart.sh`) survived; statusLine untouched (documented, intentional — matches install-hooks.sh's parity list at `install-hooks.sh:91-105`). Behavior is correct. But the file's header comment (lines 1-16, "Removes ONLY the two drone hooks... EVERYTHING ELSE is left untouched") and the closing `echo` ("Done. The drone hooks are removed...") both still describe the **pre-fix** 2-hook behavior — a user reading the script's own banner before running it gets the old, wrong picture. |
+| 3 | /queue reflects real paused state | **VERIFIED** | Live probe against the running daemon (auth via `~/.pulsar/daemon-token`, field name is `muted` not `mute`): baseline `paused:false` → POST `{"muted":true}` → `/queue` returns `paused:true` → POST `{"muted":false}` → `/queue` returns `paused:false`. Code: `AudioQueueActor.swift:1028` `paused: PulsarConfig.shared.isMuted`. Left **unmuted** at end, confirmed. |
+| 4 | speech.jsonl rotates at 5MB | **VERIFIED (code read only, no 5MB generated)** | `DaemonAuth.swift:81` `speechLogMaxBytes = 5*1024*1024`; `:284-298` rotates via `moveItem` (atomic rename, not copy-truncate) to `speech.jsonl.1`, removing any prior archive first, called under `speechLogLock` (:239-242) before every append so no double-rotation race. Rename preserves the archive's 0600 mode; fresh file re-created at 0600 (:255). Live file currently 29,593 bytes, `-rw-------`, consistent with untriggered threshold. |
+| 5 | Unmute-resume regression test is a real guard | **VERIFIED — mutation-tested** | Copied `AudioQueueActor.swift` + `PulsarConfig.swift` + the test harness to scratch, commented out the sole fix line (`lastDrainProgressAt = Date()` in `resumeAfterUnmute()`, was line 950), recompiled with the exact `swiftc` invocation from `run-tests.sh`, ran it: **69 passed, 1 failed** — the failure was precisely `"unmute re-stamped progress — purge gate stays shut"`. Reverting the one-line fix breaks the test deterministically; it is not cosmetic. |
+| 6 | Test count 70/0 | **VERIFIED** | `./scripts/run-tests.sh` on the unmodified tree → `Drone lifecycle tests: 70 passed, 0 failed / ALL PASSED ✓`. |
+| 7 | Twin drift (scripts/ vs Resources payload) | **VERIFIED clean** | `diff scripts/uninstall-hooks.sh macos/Pulsar/Sources/Resources/claude-integration/scripts/uninstall-hooks.sh` → identical. Same for `say.sh`. Full `diff -rq` of both dirs shows only dev-only scripts absent from the payload (`build-pulsar-app.sh`, `run-tests.sh`, `cast-check.sh`, etc. — expected, not shipped at runtime). No drift in files cycle 2 touched. |
+
+## New findings
+
+- **The production DMG pipeline (`package-dmg.yml`) still never stages `skills/pulsar-team`** — same defect as the original finding, just moved from "Swift doesn't copy it" to "CI never gives Swift anything to copy." This is the one that matters: it makes claim 1's fix a no-op for real users.
+- `scripts/uninstall-hooks.sh`'s header docstring and closing `echo` are now factually wrong about their own script's scope (still say "only the two drone hooks").
+
+## The single thing to fix next
+
+Add a pulsar-team staging block to `.github/workflows/package-dmg.yml`'s "Claude voice-integration payload" step, mirroring `build-pulsar-app.sh:44-50` (`mkdir -p "$CI_STAGE/skills/pulsar-team/scripts"`, `cp pulsar-team/SKILL.md` + `pulsar-team/scripts/*.sh`, `chmod +x`). Without it, cycle 2's headline "DMG users finally get /pulsar-team" claim doesn't hold for a single real download.

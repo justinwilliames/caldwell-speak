@@ -19,3 +19,10 @@ Per cycle: 3 adversarial drone reviewers (parallel) → orchestrator triage → 
   persona disclaimer added to the app UI (RosterView — nine faces shipped with no notice); PulsarConfig migration write brought under the write lock; unmute-resume REGRESSION TEST added (the one C1 fix with no guard).
   Tests 59→70 passed, 0 failed. cast-check PASS. Dry counter: 0 (still wet — 7 new confirmed findings).
 - Cycle 3: PENDING — mandate: UX/product lens (never run yet), security re-probe of the new surfaces (rotation, off-actor process spawn), and re-audit of cycle-2 claims. Note Meridian's method warning: use a git worktree if drones review while another drone writes.
+- Cycle 3 COMPLETE. Reviewers: Nova/sonnet UX (2 CONFIRMED, screenshot-evidenced), Voyager/sonnet audit (1 PRODUCTION-BREAKING + 1 docs), Sentinel/opus DIED (API 529 — security re-probe of cycle-2 surfaces CARRIES to cycle 4).
+  FIXED: package-dmg.yml never staged pulsar-team — cycle 2's headline fix was INERT for every real DMG download (now staged + hard-fails if missing);
+  persona disclaimer moved above the cast (was 3 scrolls down in .tertiary/.caption2 — the least readable text in the app); orbit arc capped at 6 while a speaker holds centre (idle 9-cluster untouched);
+  uninstall-hooks.sh header/echo docs corrected to describe the 6-hook behaviour it now has.
+  Voyager mutation-tested the unmute-resume test (revert → 69/70, correct assertion fails) = a REAL guard. Tests 70/0, cast-check PASS.
+  Dry counter: 0 (still wet). PLAUSIBLE carried: HistoryPanelView/QueuePanelView/NowPlayingView appear never instantiated (dead views, Missions-era).
+- Cycle 4: PENDING — mandate: (1) Sentinel's security re-probe of cycle-2/3 surfaces (off-actor process spawn, holdIfMuted double-insert, rotation race, installer sibling-dir write) — DIED on 529, must run; (2) dead-view check; (3) audit cycle-3 claims. Use a git worktree per Meridian's method warning if reviewing while a builder writes.

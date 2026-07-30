@@ -80,6 +80,11 @@ struct FloatingHeadsView: View {
     /// before this timer ever clears the text.
     static let lingerAfterIdle: TimeInterval = 6.0
 
+    /// Max thumbnails on the orbit arc WHILE a speaker holds the centre. Six
+    /// keeps every head legible at the enlarged-centre scale; the idle cluster is
+    /// uncapped (its 3-row palindrome handles all nine cleanly).
+    static let speakingOrbitCap = 6
+
     var body: some View {
         VStack(spacing: captionAttachGap) {
             if layout.captionEdge == .above {
@@ -325,6 +330,17 @@ struct FloatingHeadsView: View {
         for category in DroneRegistry.categories
         where category != speakingCategory && present.contains(category) {
             orbitKeys.append((id: category, category: category))
+        }
+
+        // Cap the ARC while someone holds the centre. The idle cluster was
+        // hardened for nine, but the speaking state puts the centre head at
+        // ~2.4× over the same arc: at eight-plus orbiters the thumbnails reduce
+        // to slivers and stack behind the speaker — crowding worst at the exact
+        // moment legibility matters most (screenshot-confirmed 2026-07-30).
+        // Idle keeps the full nine-slot cluster; the queued-thumbnail row uses
+        // the same shape of cap (see dedupedQueuedItems).
+        if speaker != nil, orbitKeys.count > Self.speakingOrbitCap {
+            orbitKeys = Array(orbitKeys.prefix(Self.speakingOrbitCap))
         }
         for (i, k) in orbitKeys.enumerated() {
             out.append(Participant(id: k.id, category: k.category,

@@ -56,22 +56,24 @@ struct RosterView: View {
                     .tracking(0.5)
                     .padding(.horizontal, 4)
 
+                // The cast is fictional, and the app says so BEFORE the faces —
+                // above the fold on the default tab, at .secondary weight. First
+                // placement put it after nine cards at .tertiary/.caption2, i.e.
+                // three scrolls down in the lowest-contrast style in the app: the
+                // one string whose job is "these aren't real people" was the
+                // least readable text on screen (caught the same cycle it landed).
+                Text("Invented characters — names, voices and faces given to "
+                     + "sub-agents so you can tell the work apart. None is a real "
+                     + "person.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 4)
+                    .padding(.bottom, 2)
+
                 ForEach(cast) { member in
                     row(member)
                 }
-
-                // The cast is fictional, and the app says so where the faces are.
-                // Nine named characters with distinct voices and portraits shipped
-                // with no notice anywhere in the UI until 2026-07-30 — the repo
-                // carried the disclaimer, the product didn't.
-                Text("These characters are invented — names, voices and faces given "
-                     + "to sub-agents so you can tell the work apart. None is a real "
-                     + "person, and nothing said in a drone's voice is anyone's real view.")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 4)
-                    .padding(.top, 6)
             }
             .padding(16)
         }

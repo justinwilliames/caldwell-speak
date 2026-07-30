@@ -1,19 +1,23 @@
 #!/usr/bin/env bash
-# uninstall-hooks.sh — the revert path for the Pulsar DRONE hooks only.
-# Removes ONLY the two drone hooks that install-hooks.sh wires:
+# uninstall-hooks.sh — the revert path for the Pulsar hooks.
+# Removes all SIX hooks install-hooks.sh wires — matching the in-app
+# "Remove Pulsar from Claude Code" button, which this is the manual equivalent of:
 #
-#   • SubagentStart → subagent-start.sh
-#   • SubagentStop  → subagent-stop.sh
+#   • SubagentStart    → subagent-start.sh
+#   • SubagentStop     → subagent-stop.sh
+#   • Stop             → stop-hook.sh, chime.sh
+#   • UserPromptSubmit → turn-start.sh
+#   • SessionStart     → session-start-voice.sh
 #
-# EVERYTHING ELSE is left untouched — the Stop/SessionStart/UserPromptSubmit
-# voice+chime hooks, the statusLine, and any non-Pulsar hooks (claudata,
-# delegation-ledger, etc.) that share those two events all survive. Idempotent:
-# re-running when the drone hooks are already gone is a clean no-op.
+# EVERYTHING ELSE is left untouched — the statusLine (a setting, not a hook) and
+# any non-Pulsar hooks (claudata, delegation-ledger, etc.) sharing those events
+# all survive. Idempotent: re-running when the hooks are gone is a clean no-op.
 #
 # If install-hooks.sh left a backup (settings.json.pulsar-bak.*), we mention
 # the most recent one so the user can hand-restore if they want a full revert;
-# but the default action is a surgical removal of just the two drone entries,
-# not a blanket rollback (which would also nuke unrelated later changes).
+# but the default action is a surgical removal of just the six hooks Pulsar
+# manages, not a blanket rollback (which would also nuke unrelated later
+# changes). Third-party hooks and the statusLine are left untouched.
 
 set -e
 
@@ -126,5 +130,5 @@ if [ -n "$LATEST_BAK" ]; then
   echo "A pre-install backup exists if you want a full revert instead:"
   echo "  $LATEST_BAK"
 fi
-echo "Done. The drone hooks are removed; all other hooks and the status line"
+echo "Done. Pulsar's hooks are removed; non-Pulsar hooks and the status line"
 echo "are untouched. Start a NEW Claude Code session (or open /hooks) to reload."
