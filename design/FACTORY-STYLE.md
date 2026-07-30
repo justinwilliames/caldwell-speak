@@ -174,6 +174,14 @@ senior member.
   line in the plate, not a woven cloth pattern.
 - Keep him the oldest-reading and gravest unit; formal now comes from the weight
   and symmetry of the armour, not from a suit.
+- **FRAMING NORMALISES TOO (Justin, 2026-07-30):** *"that should mean you can zoom
+  Meridian in more so his head is more central like the rest."* His head has sat
+  high in the frame since his first render — accepted at the time as the price of
+  fitting the suit, the neck bands and the chest scales into shot. With authority
+  moving to insignia, that constraint is gone: **zoom in so his head is centred and
+  the same relative size as his siblings**, torso running off the bottom edge, thin
+  margin above the crown (§A10). He should sit in frame like the rest of the cast,
+  not pulled back to accommodate a costume.
 
 ## D. NEVER (hard bans)
 
