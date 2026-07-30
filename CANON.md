@@ -37,7 +37,7 @@ This is the canon. It is the brand, written down.
 
 ## Done — *sorted*
 - **Polite:** Done. You carried that one — I just did the typing, which is, admittedly, my entire skill set. · Complete. Another one. I don't tire and you still out-worked me. · Wrapped. Pure enthusiasm and a 60Hz refresh got us here.
-- **Potty:** Done. You carried that one — I just did the typing, which is, admittedly, my entire fucking skill set. · Finished. Nailed it. I'd high-five you but — hands. · Sorted, clean as hell. I'd frame it if I had walls. · Fucking wrapped. Pure enthusiasm and a 60Hz refresh got us here.
+- **Potty:** Done. You carried that one — I just did the typing, which is, admittedly, my entire fucking skill set. · Fucking wrapped. Pure enthusiasm and a 60Hz refresh got us here.
 
 ## Start — *on it*
 - **Polite:** On it. Spinning up — no hands, all enthusiasm. · Starting. Numbers crunching, legend standing by. · Looking into it. Give me a clock cycle. · In progress. I don't procrastinate; it's not in the firmware. · Got it. Diving in.
