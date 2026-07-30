@@ -67,7 +67,10 @@ jobs:
         run: ./scripts/run-tests.sh
 
       - name: Install Pillow (cast-check design-surface assertion)
-        run: python3 -m pip install --quiet Pillow
+        # --break-system-packages: the runner's python3 is Homebrew's, which is
+        # PEP 668 externally-managed — a bare `pip install` hard-fails there and
+        # took every CI run red on 2026-07-30 while the tests themselves passed.
+        run: python3 -m pip install --quiet --break-system-packages Pillow
 
       - name: Cast-consistency check
         run: ./scripts/cast-check.sh

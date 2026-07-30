@@ -64,12 +64,24 @@ with open(settings_path) as f:
 
 hooks = data.setdefault("hooks", {})
 
+def _canon(cmd):
+    # Compare RESOLVED paths, not raw strings. ~/.claude/skills/pulsar is a
+    # symlink to the repo, so installing from both paths registered every hook
+    # TWICE — byte-identical script, two invocations per event (audible as a
+    # double chime; found by adversarial review 2026-07-30). realpath collapses
+    # the two spellings to one identity.
+    try:
+        return os.path.realpath(str(cmd).strip().split()[0])
+    except Exception:
+        return str(cmd).strip()
+
 def ensure(event, command, timeout):
     arr = hooks.setdefault(event, [])
-    # Already present anywhere in this event's groups?
+    target = _canon(command)
+    # Already present anywhere in this event's groups (symlink-aware)?
     for group in arr:
         for h in group.get("hooks", []):
-            if h.get("command") == command:
+            if h.get("command") == command or _canon(h.get("command", "")) == target:
                 return False
     arr.append({"matcher": "", "hooks": [
         {"type": "command", "command": command, "timeout": timeout}

@@ -171,11 +171,19 @@ final class PulsarConfig: @unchecked Sendable {
     /// sibling key holding a Bool/number value is preserved rather than wiped —
     /// the old strict `[String: String]` cast returned nil on any non-string
     /// value and clobbered every other key on the next write.
+    /// The read-modify-write is held under one lock: Hummingbird runs handlers as
+    /// concurrent Tasks, so two `/settings` POSTs touching DIFFERENT keys would
+    /// otherwise interleave read→write and silently drop one key's update (a
+    /// lost-update race, found by adversarial review 2026-07-30).
+    private static let writeLock = NSLock()
+
     func set(_ key: String, value: String) throws {
-        var current = loadCoerced() ?? [:]
-        current[key] = value
-        let data = try JSONSerialization.data(withJSONObject: current, options: .prettyPrinted)
-        try data.write(to: configPath)
+        try Self.writeLock.withLock {
+            var current = loadCoerced() ?? [:]
+            current[key] = value
+            let data = try JSONSerialization.data(withJSONObject: current, options: .prettyPrinted)
+            try data.write(to: configPath)
+        }
         reload()
     }
 

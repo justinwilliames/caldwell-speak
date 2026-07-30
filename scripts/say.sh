@@ -8,13 +8,19 @@ set -euo pipefail
 # --- Pulsar daemon auth ------------------------------------------------------
 # The app mints a random token into ~/.pulsar/daemon-token (0600) when it starts
 # and requires it in the X-Pulsar-Token header on every route except GET /health.
-# GRACEFUL FIRST RUN: if the file is absent (app never launched yet) we send NO
-# header at all — the daemon only enforces once it has a token, so a token-less
-# client still works in that window instead of hard-failing with 401.
+# The daemon mints the token during startup, so the gate is armed from the very
+# first request — there is NO unenforced window. A missing/unreadable token file
+# therefore means voice is DEAD (every /speak 401s), not "degraded", so warn on
+# stderr rather than failing silently: a silent 401 is indistinguishable from a
+# muted app (found by adversarial review 2026-07-30, correcting the earlier
+# "graceful first run" claim, which was wrong).
 PULSAR_TOKEN_FILE="${PULSAR_TOKEN_FILE:-$HOME/.pulsar/daemon-token}"
 PULSAR_TOKEN=""
 if [ -r "$PULSAR_TOKEN_FILE" ]; then
   PULSAR_TOKEN="$(tr -d '\r\n' < "$PULSAR_TOKEN_FILE" 2>/dev/null || echo "")"
+fi
+if [ -z "$PULSAR_TOKEN" ] && curl -sf --max-time 1 "http://127.0.0.1:${SPEAK_PORT:-7865}/health" >/dev/null 2>&1; then
+  echo "say.sh: no readable token at $PULSAR_TOKEN_FILE — the daemon is up and WILL reject this line (401). Relaunch Pulsar to mint one." >&2
 fi
 pulsar_curl() {
   if [ -n "$PULSAR_TOKEN" ]; then

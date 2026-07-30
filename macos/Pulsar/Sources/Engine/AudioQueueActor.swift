@@ -848,6 +848,14 @@ actor AudioQueueActor {
     /// Re-arm the worker after an unmute if lines were held through the mute.
     func resumeAfterUnmute() {
         guard !queue.isEmpty, !workerRunning else { return }
+        // Re-stamp drain progress BEFORE re-arming. A pause makes no progress by
+        // definition, so a mute longer than the staleness window would otherwise
+        // leave the progress gate wide open and the worker's first-iteration purge
+        // would delete the very lines this function exists to resume (found by
+        // adversarial review the same day the hold was added: "resuming 9 held
+        // line(s)" immediately followed by 9 purges). Unmuting IS the resumption
+        // of progress — the clock starts here.
+        lastDrainProgressAt = Date()
         NSLog("[AudioQueue] 🔊 unmute — resuming \(queue.count) held line(s)")
         workerRunning = true
         Task { await self.runWorker() }
