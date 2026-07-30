@@ -32,3 +32,11 @@ Per cycle: 3 adversarial drone reviewers (parallel) → orchestrator triage → 
   PLAUSIBLE carried: watchdog uses SIGTERM with no SIGKILL escalation; holdIfMuted head-reinsert can precede a priority entry enqueued during a mute (ordering nuance, not corruption).
   Tests 70/0, cast-check PASS. DRY COUNTER: 1 (Atlas dry + Sentinel "going dry" with one non-severe finding = counting this as the first dry-ish cycle; cycle 5 decides).
 - Cycle 5: PENDING — the decider. If it comes back dry, the loop STOPS (two consecutive). Mandate: fresh eyes on the two carried PLAUSIBLE items, a creative/brand lens (Nebula — never run in this loop), and a final Meridian legal/distribution re-check post-cycle-4.
+
+## Scope rulings (binding on all future cycles)
+- ACCESSIBILITY IS OUT OF SCOPE (Justin, 2026-07-30). The claude-build-hardening
+  a11y stage is NOT run for Pulsar, and no cycle should raise WCAG/CVD/VoiceOver/
+  keyboard-nav findings. Measured state at time of ruling, for the record: 0
+  accessibility labels/hints/values, 0 keyboard shortcuts, 9 droneColor call
+  sites carrying meaning (badge letters are the non-hue channel), 2 Reduce-Motion
+  honourings. Do not re-litigate; do not re-measure.
