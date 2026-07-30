@@ -116,7 +116,7 @@ If none of the gates apply: **speak.** Compose the line at the right weight and 
 {base}/scripts/say.sh "Explorer's off — scanning the repo now." --agent voyager
 ```
 
-- **`--priority`** jumps the queue and is exempt from the 60s stale-purge (180s ceiling) — for Pulsar's orchestration beats and genuine user-blockers ONLY, never drone lines.
+- **`--priority`** jumps the queue and carries the longer 180s stale ceiling — for Pulsar's orchestration beats and genuine user-blockers ONLY, never drone lines. **Never use it inside a SEQUENCED set of lines** (a roll call, a scripted exchange): priority lines play BEFORE the untagged lines queued ahead of them, so a "closing" line tagged --priority speaks near the start (observed 2026-07-30 — both Pulsar bookends of an 11-line roll call jumped to the front). Sequenced material = every line untagged, FIFO holds the script order; --priority is for interrupting a backlog, not participating in one.
 - **`--agent <category>`** speaks the line in a drone's voice (see "Voices" below) — use it for sub-agent self-announcements. The main thread speaks as Pulsar (no `--agent`).
 - **Don't use `--voice`** — it's the old ElevenLabs flag and does nothing on the local `say` engine. Voice selection is via `--agent`.
 
