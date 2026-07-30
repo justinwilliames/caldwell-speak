@@ -552,3 +552,22 @@ Keep the mechanism identical (teeth clearing sockets, pins in tracks, linkage
 visible, lit cavity) — only the maximum travel reduces. The linkage should still be
 visible at frame 3-4; if pulling the travel back hides it, favour showing the
 mechanism over hitting the exact number.
+
+## R8.13 — Eye/mouth clearance (Justin, 2026-07-31: "voyager's eyes blur into his mouth")
+
+Voyager's r4 seats the eye turret's lower bezel almost directly on the mouth's
+up-canted arc. With no machined surface between them the two assemblies merge into
+one shape — the eye "blurs into" the mouth, and the face loses its structure.
+
+**RULE:** there must be a **clearly readable machined CHEEK PLATE between the bottom
+of the eye bezel and the top of the mouth bezel** — its own surface, with a panel
+gap or chamfer line on at least one side, at minimum **~8% of frame height
+(≈80px at 1024, ≈28px at 362)** of clear metal. The eye assembly and the mouth
+assembly must read as two separate pieces of hardware bolted into a face, never as
+one continuous form.
+
+Highest risk on the units with WIDE UP-CANTED mouths whose arc ends rise toward the
+eyes — voyager, nova, echo, iris, pulsar, nebula. When the mouth cants up, the ends
+must NOT rise into the eye zone: cant the *centre* line, keep the arc's extremities
+below the clearance band. Check this at 52px too — if the eye and mouth merge into a
+single blob at thumbnail size, it fails.
