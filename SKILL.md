@@ -13,11 +13,15 @@ allowed-tools: Bash, Read
 Before the first spoken line of a session, run these and remember the answers:
 
 ```bash
+# The daemon is token-gated: every route except /health needs the shared secret
+# the app writes to ~/.pulsar/daemon-token at startup. Read it once.
+T="$(cat ~/.pulsar/daemon-token 2>/dev/null)"
+
 # 1. Check the persona mode (Polite vs Potty Mouth)
-curl -s http://127.0.0.1:7865/settings | python3 -c 'import sys,json;d=json.load(sys.stdin);print("expletives_enabled:", d.get("expletives_enabled"))'
+curl -s -H "X-Pulsar-Token: $T" http://127.0.0.1:7865/settings | python3 -c 'import sys,json;d=json.load(sys.stdin);print("expletives_enabled:", d.get("expletives_enabled"))'
 
 # 2. (Optional) Peek at the cached canon pool — the fallback library, not your default
-curl -s 'http://127.0.0.1:7865/cache/phrases?sort=popular&limit=30' | python3 -c 'import sys,json;d=json.load(sys.stdin);
+curl -s -H "X-Pulsar-Token: $T" 'http://127.0.0.1:7865/cache/phrases?sort=popular&limit=30' | python3 -c 'import sys,json;d=json.load(sys.stdin);
 for p in d["phrases"][:20]:
   if p["text"]: print(f"  ×{p[\"play_count\"]:>3} [{p[\"key\"][:8]}] {p[\"text\"]}")'
 ```
@@ -221,13 +225,27 @@ Pulsar himself speaks in **Daniel** (the UK male orchestrator voice). Sub-agents
 | `nebula` | Moira | design / visual / image |
 | `echo` | Junior | writing / docs / copy — **retained as a defined character but retired as an auto-category; creative/copy/docs routes to `nebula` instead** |
 | `iris` | Tessa | marketing — brand, paid, search, SEO, content, lifecycle/CRM, growth |
+| `meridian` | Ralph | legal / compliance / licences — summoned via `--with-legal` in team reviews or `--agent meridian` |
 | `atlas` | Rishi | general |
 
 Each drone voice is resolved to its best installed variant (Enhanced → Premium → base) and guaranteed English at runtime, so an unset variant degrades gracefully rather than garbling. Don't hand-pick voices with `--voice` — pass `--agent` and let the registry map it.
 
+**Cross-pollination — the drones consult each other, out loud.** A drone that needs
+knowledge outside its lens never guesses: it asks the drone that owns that lens, BY NAME,
+ALOUD — the asking drone speaks the question in its own voice
+(`say.sh "Meridian, does this claim need a consent record?" --agent iris`), the owning
+drone answers in its voice, and the orchestrating session relays between them (agents
+can't message each other directly — the orchestrator is the switchboard, via SendMessage
+to a live agent's preserved context, or a fresh spawn). Reports mark out-of-lens gaps as
+`CONSULT <drone>: <question>` instead of a fabricated answer. The effect for the user:
+a team of colleagues audibly leaning on each other's expertise — never nine soloists
+inventing each other's answers.
+
+**The characters are fictional.** Pulsar, Voyager, Sentinel, Nova, Nebula, Echo, Iris, Atlas, and Meridian are invented lenses — names, voices, and faces given to sub-agents so the user can tell the work apart by ear and on screen. None of them is a real person, an employee, or a portrait of anyone; a drone's background or opinion is a costume for the job it's doing, not a claim about a human being. Never fabricate quotes, endorsements, credentials, or factual claims attributed to these names, and if a real person shares one, nothing said in that voice is theirs.
+
 ## UI
 
-User-facing UX is the macOS menu-bar app (`Pulsar.app`) — a three-tab popover (**Team**, **Settings**, **Missions** — opt-in, hidden unless Task Mode is enabled in Settings) plus an animated floating portrait that auto-appears top-left when Pulsar speaks and auto-hides when the queue empties. Sub-agent drones orbit as sibling heads while their agents run, the speaker taking centre.
+User-facing UX is the macOS menu-bar app (`Pulsar.app`) — a two-tab popover (**Team**, **Settings**) plus an animated floating portrait that auto-appears top-left when Pulsar speaks and auto-hides when the queue empties. Sub-agent drones orbit as sibling heads while their agents run, the speaker taking centre.
 
 ## Sub-agents and orchestration
 

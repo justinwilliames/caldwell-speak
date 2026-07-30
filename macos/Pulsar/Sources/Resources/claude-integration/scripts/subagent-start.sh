@@ -26,6 +26,27 @@
 
 set -euo pipefail
 
+# --- Pulsar daemon auth ------------------------------------------------------
+# The app mints a random token into ~/.pulsar/daemon-token (0600) when it starts
+# and requires it in the X-Pulsar-Token header on every route except GET /health.
+# GRACEFUL FIRST RUN: if the file is absent (app never launched yet) we send NO
+# header at all — the daemon only enforces once it has a token, so a token-less
+# client still works in that window instead of hard-failing with 401.
+PULSAR_TOKEN_FILE="${PULSAR_TOKEN_FILE:-$HOME/.pulsar/daemon-token}"
+PULSAR_TOKEN=""
+if [ -r "$PULSAR_TOKEN_FILE" ]; then
+  PULSAR_TOKEN="$(tr -d '\r\n' < "$PULSAR_TOKEN_FILE" 2>/dev/null || echo "")"
+fi
+pulsar_curl() {
+  if [ -n "$PULSAR_TOKEN" ]; then
+    curl -H "X-Pulsar-Token: $PULSAR_TOKEN" "$@"
+  else
+    curl "$@"
+  fi
+}
+# ----------------------------------------------------------------------------
+
+
 SPEAK_PORT="${SPEAK_PORT:-7865}"
 DAEMON="http://127.0.0.1:$SPEAK_PORT"
 
@@ -92,7 +113,7 @@ for k in ("description", "prompt", "task", "message"):
         task_text += " " + v
 prompt = task_text.lower()
 
-CAST = "voyager|sentinel|nova|nebula|echo|iris|atlas"
+CAST = "voyager|sentinel|nova|nebula|echo|iris|atlas|meridian"
 
 # Static agent_type -> drone map. Keys cover the named agent types plus their
 # canonical roles, so "Explore"/"explorer", "review"/"reviewer", etc. all land.
@@ -103,6 +124,7 @@ TYPE_MAP = {
     "artist": "nebula", "design": "nebula", "designer": "nebula",
     "write": "nebula", "writer": "nebula", "scribe": "nebula",
     "marketer": "iris", "marketing": "iris",
+    "legal": "meridian", "counsel": "meridian", "compliance": "meridian",
     "general": "atlas", "generalist": "atlas",
     "claude": "atlas", "plan": "atlas", "task": "atlas",
 }
@@ -116,6 +138,20 @@ TYPE_MAP = {
 # "review"). Drafting/copy terms stay with nebula (nebula owns creative
 # EXECUTION; iris owns marketing strategy, channels, and measurement).
 KEYWORDS = [
+    # meridian runs FIRST: "legal review" would otherwise hit the sentinel
+    # "review" keyword and "compliance audit" its "audit". Terms are multi-word
+    # or homograph-free because matching is bare substring — Voyager measured
+    # the earlier bare-term tuple ("legal"/"regulat"/"liabilit") at 10/10 false
+    # positives on engineering prose (illegal utf-8, self-regulating backoff,
+    # the MIT LIABILITY clause); this tuple scores 0/10 with 10/10 genuine
+    # legal prompts still routing. Bare "legal" is gone, so --with-legal and
+    # the explicit "--agent meridian" marker carry invocation.
+    (("legal review", "legal risk", "legal exposure", "legal advice",
+      "is this legal", "compliance review", "compliance risk", "regulatory",
+      "gdpr", "ccpa", "privacy polic", "terms of service", "terms of use",
+      "general counsel", "counsel review", "legal liability", "trademark",
+      "trade mark", "copyright infring", "licence oblig", "license oblig",
+      "third-party notice", "indemnif", "spam act", "consumer law"), "meridian"),
     (("lifecycle", "braze", "deliverab", "paid media", "paid search", "seo",
       "sem ", "marketing", "retention", "winback", "win-back", "activation",
       "segment", "utm", "cac", "ltv", "attribution", "crm", "hubspot"), "iris"),
@@ -170,7 +206,7 @@ print(json.dumps(out))
 }
 
 post_registration() {
-  curl -sf --max-time 2 -X POST -H "Content-Type: application/json" \
+  pulsar_curl -sf --max-time 2 -X POST -H "Content-Type: application/json" \
     -d "$1" "$DAEMON/subagent/start" >/dev/null 2>&1 || true
 }
 

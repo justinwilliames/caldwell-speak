@@ -56,7 +56,10 @@ final class SSEClient: NSObject, URLSessionDataDelegate, @unchecked Sendable {
         config.timeoutIntervalForResource = .infinity
         session = URLSession(configuration: config, delegate: self, delegateQueue: .main)
 
-        var request = URLRequest(url: url)
+        // /events is token-gated (DaemonAuth) — read on every connect, not
+        // captured at init, so a reconnect after the server minted its token
+        // picks it up rather than looping on 401.
+        var request = DaemonAPI.authorized(url)
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
         task = session?.dataTask(with: request)

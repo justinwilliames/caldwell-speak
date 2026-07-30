@@ -12,6 +12,25 @@ struct DaemonAPI: Sendable {
         return 7865
     }
 
+    /// Build a request carrying the daemon's shared secret. Every route except
+    /// GET /health requires it (see DaemonAuth), and that includes the app's own
+    /// UI — the server cannot tell "our popover" from "some other local process"
+    /// by any other means. Token absent (first launch, before the server has
+    /// minted one) → no header, and the gate is open in that same window.
+    static func authorized(_ url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        if let token = DaemonAuth.token {
+            request.setValue(token, forHTTPHeaderField: DaemonAuth.headerName)
+        }
+        return request
+    }
+
+    /// GET + decode, with the auth header attached.
+    private func get<T: Decodable>(_ type: T.Type, url: URL) async throws -> T {
+        let (data, _) = try await URLSession.shared.data(for: Self.authorized(url))
+        return try JSONDecoder().decode(T.self, from: data)
+    }
+
     // MARK: - Queue Control
 
     func pause(channel: String? = nil) async throws {
@@ -48,8 +67,7 @@ struct DaemonAPI: Sendable {
         ]
         if let channel { queryItems.append(URLQueryItem(name: "channel", value: channel)) }
         components.queryItems = queryItems
-        let (data, _) = try await URLSession.shared.data(from: components.url!)
-        return try JSONDecoder().decode(HistoryResponse.self, from: data)
+        return try await get(HistoryResponse.self, url: components.url!)
     }
 
     // MARK: - Phrase Cache
@@ -65,8 +83,7 @@ struct DaemonAPI: Sendable {
             URLQueryItem(name: "sort", value: sort.rawValue),
             URLQueryItem(name: "limit", value: "\(limit)"),
         ]
-        let (data, _) = try await URLSession.shared.data(from: components.url!)
-        return try JSONDecoder().decode(CachedPhrasesResponse.self, from: data)
+        return try await get(CachedPhrasesResponse.self, url: components.url!)
     }
 
     func playCachedPhrase(key: String) async throws {
@@ -76,18 +93,16 @@ struct DaemonAPI: Sendable {
     // MARK: - Voices
 
     func fetchVoices() async throws -> [Voice] {
-        let (data, _) = try await URLSession.shared.data(from: baseURL.appendingPathComponent("voices"))
-        return try JSONDecoder().decode([Voice].self, from: data)
+        try await get([Voice].self, url: baseURL.appendingPathComponent("voices"))
     }
 
     // MARK: - Settings & Usage
 
     func fetchSettings() async throws -> DaemonSettings {
-        let (data, _) = try await URLSession.shared.data(from: baseURL.appendingPathComponent("settings"))
-        return try JSONDecoder().decode(DaemonSettings.self, from: data)
+        try await get(DaemonSettings.self, url: baseURL.appendingPathComponent("settings"))
     }
 
-    func saveSettings(muted: Bool? = nil, expletivesEnabled: Bool? = nil, canonEnabled: Bool? = nil, floatingHeadEnabled: Bool? = nil, subtitlesEnabled: Bool? = nil, showActiveAgents: Bool? = nil, taskModeEnabled: Bool? = nil, llmTitlesEnabled: Bool? = nil, nativeVoice: String? = nil) async throws -> SettingsSaveResponse {
+    func saveSettings(muted: Bool? = nil, expletivesEnabled: Bool? = nil, canonEnabled: Bool? = nil, floatingHeadEnabled: Bool? = nil, subtitlesEnabled: Bool? = nil, showActiveAgents: Bool? = nil, nativeVoice: String? = nil) async throws -> SettingsSaveResponse {
         var body: [String: Any] = [:]
         if let muted { body["muted"] = muted }
         if let expletivesEnabled { body["expletives_enabled"] = expletivesEnabled }
@@ -95,38 +110,15 @@ struct DaemonAPI: Sendable {
         if let floatingHeadEnabled { body["floating_head_enabled"] = floatingHeadEnabled }
         if let subtitlesEnabled { body["subtitles_enabled"] = subtitlesEnabled }
         if let showActiveAgents { body["show_active_agents"] = showActiveAgents }
-        if let taskModeEnabled { body["task_mode_enabled"] = taskModeEnabled }
-        if let llmTitlesEnabled { body["llm_titles_enabled"] = llmTitlesEnabled }
         if let nativeVoice { body["native_voice"] = nativeVoice }
 
-        var request = URLRequest(url: baseURL.appendingPathComponent("settings"))
+        var request = Self.authorized(baseURL.appendingPathComponent("settings"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, _) = try await URLSession.shared.data(for: request)
         return try JSONDecoder().decode(SettingsSaveResponse.self, from: data)
-    }
-
-    // MARK: - Sessions (Missions board grouping)
-
-    func fetchSessions() async throws -> SessionsEnvelope {
-        let (data, _) = try await URLSession.shared.data(from: baseURL.appendingPathComponent("sessions"))
-        return try JSONDecoder().decode(SessionsEnvelope.self, from: data)
-    }
-
-    func dismissSession(_ id: String) async throws {
-        try await post("session/dismiss", body: ["session_id": id])
-    }
-
-    /// Manually rename a session. Reuses /session/activity with user_named:true —
-    /// the daemon latches the human title as permanent (no new endpoint needed).
-    func renameSession(_ id: String, to name: String) async throws {
-        try await post("session/activity", body: [
-            "session_id": id,
-            "name": name,
-            "user_named": true,
-        ])
     }
 
     // MARK: - Queue Status
@@ -136,15 +128,14 @@ struct DaemonAPI: Sendable {
         if let channel {
             components.queryItems = [URLQueryItem(name: "channel", value: channel)]
         }
-        let (data, _) = try await URLSession.shared.data(from: components.url!)
-        return try JSONDecoder().decode(QueueStatusResponse.self, from: data)
+        return try await get(QueueStatusResponse.self, url: components.url!)
     }
 
     // MARK: - Private
 
     @discardableResult
     private func post(_ path: String, body: [String: Any]? = nil) async throws -> Data {
-        var request = URLRequest(url: baseURL.appendingPathComponent(path))
+        var request = Self.authorized(baseURL.appendingPathComponent(path))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let body {

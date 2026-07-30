@@ -520,9 +520,12 @@ struct FloatingHeadsView: View {
 
     /// Symmetric-cluster slot offsets for the idle swarm, centred on the head
     /// zone. Balanced rows (a horizontal AND a vertical mirror) that adapt to the
-    /// live count 1…7. Rows are chosen so the MIDDLE is the WIDEST and the top /
+    /// live count. Rows are chosen so the MIDDLE is the WIDEST and the top /
     /// bottom taper in — an OVAL/hexagonal blob, not an hourglass "H":
     ///   1:[1]  2:[2]  3:[3]  4:[2,2]  5:[1,3,1]  6:[3,3]  7:[2,3,2]
+    /// 8+ compute a 3-row palindrome with the middle row widest (8:[2,4,2],
+    /// 9:[3,3,3], 10:[3,4,3]) so a full nine-drone review — Meridian included —
+    /// packs without any slot falling off the table into .zero-stacking.
     /// Row counts are a palindrome so the pod mirrors top-to-bottom; each row is
     /// horizontally centred. Slot order follows participant order, so a change in
     /// the live set re-packs the pod symmetrically.
@@ -536,7 +539,10 @@ struct FloatingHeadsView: View {
         case 4: rows = [2, 2]
         case 5: rows = [1, 3, 1]      // plus/diamond — wide middle, not a pinched X
         case 6: rows = [3, 3]
-        default: rows = [2, 3, 2]     // hexagon+centre oval (7 = the ceiling)
+        case 7: rows = [2, 3, 2]      // hexagon+centre oval
+        default:
+            let side = max(2, total / 3)
+            rows = [side, total - 2 * side, side]
         }
         var offsets: [CGSize] = []
         let rowCount = rows.count

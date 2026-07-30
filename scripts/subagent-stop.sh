@@ -13,6 +13,27 @@
 
 set -euo pipefail
 
+# --- Pulsar daemon auth ------------------------------------------------------
+# The app mints a random token into ~/.pulsar/daemon-token (0600) when it starts
+# and requires it in the X-Pulsar-Token header on every route except GET /health.
+# GRACEFUL FIRST RUN: if the file is absent (app never launched yet) we send NO
+# header at all — the daemon only enforces once it has a token, so a token-less
+# client still works in that window instead of hard-failing with 401.
+PULSAR_TOKEN_FILE="${PULSAR_TOKEN_FILE:-$HOME/.pulsar/daemon-token}"
+PULSAR_TOKEN=""
+if [ -r "$PULSAR_TOKEN_FILE" ]; then
+  PULSAR_TOKEN="$(tr -d '\r\n' < "$PULSAR_TOKEN_FILE" 2>/dev/null || echo "")"
+fi
+pulsar_curl() {
+  if [ -n "$PULSAR_TOKEN" ]; then
+    curl -H "X-Pulsar-Token: $PULSAR_TOKEN" "$@"
+  else
+    curl "$@"
+  fi
+}
+# ----------------------------------------------------------------------------
+
+
 SPEAK_PORT="${SPEAK_PORT:-7865}"
 DAEMON="http://127.0.0.1:$SPEAK_PORT"
 FAIL_LOG="${PULSAR_HOOK_LOG:-$HOME/.claude/pulsar-hook-failures.log}"
@@ -47,7 +68,7 @@ AGENT_ID=$(printf '%s' "$BODY" | python3 -c 'import json,sys; print(json.load(sy
 # on total failure we LOG (never block Claude Code, but no longer silent).
 ok=0
 for attempt in 1 2 3; do
-  if curl -sf --max-time 4 -X POST -H "Content-Type: application/json" \
+  if pulsar_curl -sf --max-time 4 -X POST -H "Content-Type: application/json" \
        -d "$BODY" "$DAEMON/subagent/stop" >/dev/null 2>&1; then
     ok=1
     break

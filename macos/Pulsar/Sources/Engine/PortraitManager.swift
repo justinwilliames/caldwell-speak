@@ -67,7 +67,13 @@ final class PortraitManager {
     private func fetchImage(_ urlString: String) async -> NSImage? {
         guard let url = URL(string: urlString) else { return nil }
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
+            // /portraits is token-gated like every route but /health, so the
+            // app's own asset fetches must present the shared secret too.
+            var request = URLRequest(url: url)
+            if let token = DaemonAuth.token {
+                request.setValue(token, forHTTPHeaderField: DaemonAuth.headerName)
+            }
+            let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return nil }
             return NSImage(data: data)
         } catch {

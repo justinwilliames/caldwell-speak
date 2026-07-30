@@ -117,6 +117,9 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ steps.version.outputs.marketing_version }}" "$APP_PATH/Contents/Info.plist"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ steps.version.outputs.build_number }}" "$APP_PATH/Contents/Info.plist"
           cp macos/Pulsar/Sources/Resources/AppIcon.icns "$APP_PATH/Contents/Resources/AppIcon.icns"
+          # Third-party licence attributions must ship IN the bundle (Apache-2.0
+          # §4 + MIT notice conditions) — keep in lockstep with build-pulsar-app.sh.
+          cp THIRD-PARTY-NOTICES.md "$APP_PATH/Contents/Resources/THIRD-PARTY-NOTICES.md"
 
           if [ -d assets/portraits ]; then
             mkdir -p "$APP_PATH/Contents/Resources/assets"

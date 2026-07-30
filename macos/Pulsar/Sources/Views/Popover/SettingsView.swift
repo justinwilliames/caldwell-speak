@@ -21,7 +21,6 @@ struct SettingsView: View {
                 Divider()
                 personaSection
                 Divider()
-                taskModeSection
                 statusBanner
                 Divider()
                 CheckForUpdatesView(updater: updater)
@@ -169,68 +168,6 @@ struct SettingsView: View {
                 }
             }
         }
-    }
-
-    // MARK: - Task Mode (beta)
-
-    @ViewBuilder
-    private var taskModeSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("TASK MODE")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .tracking(0.5)
-
-            HStack(alignment: .top, spacing: 10) {
-                Toggle("", isOn: taskModeEnabledBinding)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Task mode (beta)")
-                        .font(.caption.weight(.medium))
-                    Text("Adds a Missions tab: every Claude session you've got running — flagged the moment one needs you back. Off by default.")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 0)
-            }
-
-            HStack(alignment: .top, spacing: 10) {
-                Toggle("", isOn: llmTitlesEnabledBinding)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("AI-generated mission names")
-                        .font(.caption.weight(.medium))
-                    Text(viewModel.settings?.taskModeEnabled == false
-                         ? "Requires Task mode — enable above."
-                         : "Off (default): missions are named from your first message, fully on-device. On: your first message is sent to Claude (Haiku) to generate a short title.")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 0)
-            }
-            // AI titles ride on Task mode — no board, no missions to name.
-            .disabled(viewModel.settings?.taskModeEnabled == false)
-        }
-    }
-
-    private var taskModeEnabledBinding: Binding<Bool> {
-        Binding(
-            get: { viewModel.settings?.taskModeEnabled ?? false },
-            set: { newValue in Task { await viewModel.setTaskModeEnabled(newValue) } }
-        )
-    }
-
-    private var llmTitlesEnabledBinding: Binding<Bool> {
-        Binding(
-            get: { viewModel.settings?.llmTitlesEnabled ?? false },
-            set: { newValue in Task { await viewModel.setLlmTitlesEnabled(newValue) } }
-        )
     }
 
     // MARK: - Persona (copyable prompt for the user's own Claude)

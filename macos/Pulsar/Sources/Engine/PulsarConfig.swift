@@ -138,23 +138,6 @@ final class PulsarConfig: @unchecked Sendable {
         return !["0", "false", "no", "off", ""].contains(val.lowercased())
     }
 
-    /// Whether Task Mode is enabled — shows the persistent Missions board tab in
-    /// the popover. Default OFF (opt-in). Independent of the transient swarm.
-    var taskModeEnabled: Bool {
-        let val = lock.withLock { _config["PULSAR_TASK_MODE"] } ?? "0"
-        return ["1", "true", "yes", "on"].contains(val.lowercased())
-    }
-
-    /// Whether AI-generated mission titles are enabled. Default OFF — local
-    /// first-line naming is the canonical, fully-on-device default. When ON, the
-    /// turn-start hook sends the session's first message to Claude (Haiku) to
-    /// generate a short title that REPLACES the local name. A disclosed opt-in:
-    /// the ONLY thing in Task Mode that leaves the machine, so it ships off.
-    var llmTitlesEnabled: Bool {
-        let val = lock.withLock { _config["PULSAR_LLM_TITLES"] } ?? "0"
-        return ["1", "true", "yes", "on"].contains(val.lowercased())
-    }
-
     // MARK: - Mutate + reload
 
     /// Read config.json from disk and coerce every value to a String, tolerating

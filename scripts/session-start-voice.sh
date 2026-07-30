@@ -22,6 +22,27 @@
 
 set -e
 
+# --- Pulsar daemon auth ------------------------------------------------------
+# The app mints a random token into ~/.pulsar/daemon-token (0600) when it starts
+# and requires it in the X-Pulsar-Token header on every route except GET /health.
+# GRACEFUL FIRST RUN: if the file is absent (app never launched yet) we send NO
+# header at all — the daemon only enforces once it has a token, so a token-less
+# client still works in that window instead of hard-failing with 401.
+PULSAR_TOKEN_FILE="${PULSAR_TOKEN_FILE:-$HOME/.pulsar/daemon-token}"
+PULSAR_TOKEN=""
+if [ -r "$PULSAR_TOKEN_FILE" ]; then
+  PULSAR_TOKEN="$(tr -d '\r\n' < "$PULSAR_TOKEN_FILE" 2>/dev/null || echo "")"
+fi
+pulsar_curl() {
+  if [ -n "$PULSAR_TOKEN" ]; then
+    curl -H "X-Pulsar-Token: $PULSAR_TOKEN" "$@"
+  else
+    curl "$@"
+  fi
+}
+# ----------------------------------------------------------------------------
+
+
 DAEMON="http://127.0.0.1:7865"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SAY="$SCRIPT_DIR/say.sh"
@@ -37,13 +58,13 @@ SAY="$SCRIPT_DIR/say.sh"
 # ever waits during the narrow post-boot window.
 _up=""
 for _ in $(seq 1 10); do
-  if curl -sf --connect-timeout 1 "$DAEMON/health" >/dev/null 2>&1; then _up=1; break; fi
+  if pulsar_curl -sf --connect-timeout 1 "$DAEMON/health" >/dev/null 2>&1; then _up=1; break; fi
   sleep 0.5
 done
 [ -z "$_up" ] && exit 0
 
 # One settings fetch; parse everything from it.
-SETTINGS=$(curl -sf --connect-timeout 1 "$DAEMON/settings" 2>/dev/null || echo "{}")
+SETTINGS=$(pulsar_curl -sf --connect-timeout 1 "$DAEMON/settings" 2>/dev/null || echo "{}")
 
 MUTED=$(printf '%s' "$SETTINGS" | python3 -c 'import sys,json
 try: print("true" if json.load(sys.stdin).get("muted") else "false")

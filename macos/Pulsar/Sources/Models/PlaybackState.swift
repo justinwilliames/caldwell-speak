@@ -130,53 +130,6 @@ struct DronesInFlightEvent: Codable {
     let drones: [String: String]
 }
 
-// MARK: - Session grouping (Missions board)
-
-/// The session-grouping payload — the `sessions` SSE event and the `/sessions`
-/// GET share this exact snake_case shape. Each session nests its drones.
-struct SessionsEnvelope: Codable, Sendable {
-    let sessions: [SessionDTO]
-}
-
-struct SessionDTO: Codable, Sendable {
-    let session_id: String
-    let name: String
-    let label: String
-    let phase: String
-    let last_seen: Int
-    // Optional so a daemon that predates the Session Signature fields still
-    // decodes (belt-and-braces in both directions); the mapper defaults them.
-    let branch: String?
-    let repo: String?
-    let last_action: String?
-    let user_named: Bool?
-    /// The REAL Claude Desktop sidebar title (optional so an older daemon that
-    /// omits it still decodes); the mapper defaults it to "".
-    let sidebar_title: String?
-    /// LIVE heartbeat layer (PreToolUse). Optional so an older daemon that omits
-    /// them still decodes; the mapper defaults to false/"".
-    let active_now: Bool?
-    let current_action: String?
-    let active_category: String?
-    /// SERVER-RESOLVED presentation truth (2026-07-06 review, R4 item 3): the
-    /// one `title`, the honest `status` ("active"|"working"|"waiting"),
-    /// idle-fallback `stale` provenance, the window's real gate+sort key
-    /// `last_user_message`, and `is_mission` (this session needs the user).
-    /// All optional so an older daemon still decodes; the mapper falls back to
-    /// the legacy client-side derivations when absent.
-    let title: String?
-    let status: String?
-    let stale: Bool?
-    let last_user_message: Int?
-    let is_mission: Bool?
-    let drones: [SessionDroneDTO]
-}
-
-struct SessionDroneDTO: Codable, Sendable {
-    let agent_id: String
-    let category: String
-}
-
 struct PauseStateEvent: Codable {
     let globalPaused: Bool
     let channelPaused: [String]

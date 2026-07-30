@@ -18,13 +18,28 @@
 # Stop hooks block Claude Code until they exit, so this is built to be
 # fast (<100ms typical) and silent (all output redirected to /dev/null).
 
-# Recursion guard — the Missions titler (turn-start.sh) invokes `claude` with
-# hooks disabled to generate a session name; if that ever leaks, this env flag
-# set on the naming sub-run keeps its Stop from creating a stray "waiting"
-# mission (or looping). No-op the whole hook for the naming invocation.
-[ -n "$PULSAR_NAMING" ] && exit 0
-
 set -e
+
+# --- Pulsar daemon auth ------------------------------------------------------
+# The app mints a random token into ~/.pulsar/daemon-token (0600) when it starts
+# and requires it in the X-Pulsar-Token header on every route except GET /health.
+# GRACEFUL FIRST RUN: if the file is absent (app never launched yet) we send NO
+# header at all — the daemon only enforces once it has a token, so a token-less
+# client still works in that window instead of hard-failing with 401.
+PULSAR_TOKEN_FILE="${PULSAR_TOKEN_FILE:-$HOME/.pulsar/daemon-token}"
+PULSAR_TOKEN=""
+if [ -r "$PULSAR_TOKEN_FILE" ]; then
+  PULSAR_TOKEN="$(tr -d '\r\n' < "$PULSAR_TOKEN_FILE" 2>/dev/null || echo "")"
+fi
+pulsar_curl() {
+  if [ -n "$PULSAR_TOKEN" ]; then
+    curl -H "X-Pulsar-Token: $PULSAR_TOKEN" "$@"
+  else
+    curl "$@"
+  fi
+}
+# ----------------------------------------------------------------------------
+
 
 DAEMON="http://127.0.0.1:7865"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -34,8 +49,8 @@ SAY="$SCRIPT_DIR/say.sh"
 # may not send anything). The `[ -t 0 ]` guard handles the no-producer case;
 # stdin is a pipe Claude Code closes after writing, so a plain `cat` can't
 # hang. (Do NOT use `timeout` here — it does not exist on macOS, so
-# `timeout 2 cat` silently returns empty, which nukes session_id and stops
-# the Missions board from ever flipping a session to "Paused".)
+# `timeout 2 cat` silently returns empty, which nukes transcript_path and
+# leaves step 5's context detection with nothing to grep.)
 EVENT_JSON=""
 if [ -t 0 ]; then
   : # tty — nothing to read
@@ -44,74 +59,10 @@ else
 fi
 
 # 1. Daemon up?
-curl -sf --connect-timeout 1 "$DAEMON/health" >/dev/null 2>&1 || exit 0
-
-# 1b. Missions board: the turn just ENDED, so this session is now waiting on the
-#     user ("Needs you"). Signal phase:"waiting" — NO user_message (only a real
-#     UserPromptSubmit moves the recency window). Best-effort, backgrounded,
-#     non-fatal, and fired regardless of the mute/busy/debounce backoffs below so
-#     the board's status is always accurate. Parses session_id/cwd from the Stop
-#     event JSON already read into EVENT_JSON above.
-if [ -n "$EVENT_JSON" ]; then
-  S_SID=$(printf '%s' "$EVENT_JSON" | python3 -c 'import sys,json
-try: print(json.load(sys.stdin).get("session_id",""))
-except: print("")' 2>/dev/null || echo "")
-  S_CWD=$(printf '%s' "$EVENT_JSON" | python3 -c 'import sys,json
-try: print(json.load(sys.stdin).get("cwd",""))
-except: print("")' 2>/dev/null || echo "")
-  # Ephemeral/scratch session (cwd under the system temp dir, e.g. Comet's
-  # dictation-cleanup CLI)? Blank the id so the block below skips it — those
-  # aren't real missions and must not flip a phantom row to "Paused".
-  case "$S_CWD" in /private/var/folders/*|/var/folders/*|/private/tmp/*|/tmp/*) S_SID="" ;; esac
-  if [ -n "$S_SID" ]; then
-    # Session Signature: a ~48-char single-line snippet of the LAST assistant
-    # message — the highest-signal per-row discriminator ("what this session just
-    # did"), updated every turn (unlike the sticky first-message name). Parsed
-    # from the same transcript tail the canon picker reads at step 5; done here so
-    # it rides the phase:"waiting" POST rather than adding a request. Best-effort
-    # and fully guarded — no transcript / no assistant text simply omits it.
-    S_TRANSCRIPT=$(printf '%s' "$EVENT_JSON" | python3 -c 'import sys,json
-try: print(json.load(sys.stdin).get("transcript_path",""))
-except: print("")' 2>/dev/null || echo "")
-    S_ACTION=""
-    if [ -n "$S_TRANSCRIPT" ] && [ -f "$S_TRANSCRIPT" ]; then
-      S_ACTION=$(tail -c 200000 "$S_TRANSCRIPT" 2>/dev/null | python3 -c '
-import sys, json, re
-last = ""
-for raw in sys.stdin:
-    raw = raw.strip()
-    if not raw or not raw.startswith("{"): continue
-    try: ev = json.loads(raw)
-    except: continue
-    if ev.get("type") != "assistant": continue
-    for chunk in ev.get("message", {}).get("content", []):
-        if chunk.get("type") == "text" and chunk.get("text"):
-            last = chunk["text"]
-# First non-empty line, whitespace-collapsed, capped at 48 chars.
-line = ""
-for l in last.splitlines():
-    l = " ".join(l.split())
-    if l:
-        line = l
-        break
-print(line[:48])
-' 2>/dev/null || echo "")
-    fi
-    S_BODY=$(python3 -c 'import sys,json
-sid,cwd,action=sys.argv[1],sys.argv[2],sys.argv[3]
-d={"session_id":sid,"phase":"waiting"}
-if cwd: d["cwd"]=cwd
-if action: d["last_action"]=action
-print(json.dumps(d))' "$S_SID" "$S_CWD" "$S_ACTION" 2>/dev/null || echo "")
-    if [ -n "$S_BODY" ]; then
-      ( curl -sf --max-time 2 -X POST -H 'Content-Type: application/json' \
-          -d "$S_BODY" "$DAEMON/session/activity" >/dev/null 2>&1 || true ) &
-    fi
-  fi
-fi
+pulsar_curl -sf --connect-timeout 1 "$DAEMON/health" >/dev/null 2>&1 || exit 0
 
 # 2. Pull /settings once — check muted state
-SETTINGS=$(curl -sf --connect-timeout 1 "$DAEMON/settings" 2>/dev/null || echo "{}")
+SETTINGS=$(pulsar_curl -sf --connect-timeout 1 "$DAEMON/settings" 2>/dev/null || echo "{}")
 MUTED=$(echo "$SETTINGS" | python3 -c 'import sys,json
 try: print("true" if json.load(sys.stdin).get("muted") else "false")
 except: print("false")' 2>/dev/null || echo "false")
@@ -123,7 +74,7 @@ except: print("false")' 2>/dev/null || echo "false")
 #    fired this turn — don't stack a hook ping on top.
 #    /queue returns {playing: Bool, queued: Int, ...}; we treat either
 #    as "busy" and back off.
-BUSY=$(curl -sf --connect-timeout 1 "$DAEMON/queue" 2>/dev/null \
+BUSY=$(pulsar_curl -sf --connect-timeout 1 "$DAEMON/queue" 2>/dev/null \
   | python3 -c 'import sys,json
 try:
     d = json.load(sys.stdin)
@@ -136,7 +87,7 @@ except: print("idle")' 2>/dev/null || echo "idle")
 #    finished — still back off to avoid double-pings on close turns.
 #    NOTE: /history returns a bare JSON array, not {"entries":[…]}.
 #    Earlier code assumed an object and silently failed → no debounce.
-RECENT=$(curl -sf --connect-timeout 1 "$DAEMON/history?limit=1" 2>/dev/null \
+RECENT=$(pulsar_curl -sf --connect-timeout 1 "$DAEMON/history?limit=1" 2>/dev/null \
   | python3 -c 'import sys,json,time
 try:
     d = json.load(sys.stdin)

@@ -48,7 +48,7 @@ mkdir -p "$CLAUDE_STAGE/skills/pulsar-team/scripts"
 cp "$REPO_ROOT/pulsar-team/SKILL.md" "$CLAUDE_STAGE/skills/pulsar-team/SKILL.md"
 cp "$REPO_ROOT/pulsar-team/scripts/"*.sh "$CLAUDE_STAGE/skills/pulsar-team/scripts/" 2>/dev/null || true
 chmod +x "$CLAUDE_STAGE/skills/pulsar-team/scripts/"*.sh 2>/dev/null || true
-for f in say.sh session-start-voice.sh stop-hook.sh chime.sh turn-start.sh pretooluse.sh statusline.sh subagent-start.sh subagent-stop.sh install-hooks.sh uninstall-hooks.sh; do
+for f in say.sh session-start-voice.sh stop-hook.sh chime.sh turn-start.sh statusline.sh subagent-start.sh subagent-stop.sh install-hooks.sh uninstall-hooks.sh; do
   cp "$REPO_ROOT/scripts/$f" "$CLAUDE_STAGE/scripts/$f"
 done
 
@@ -83,6 +83,13 @@ if [ -d "$REPO_ROOT/assets/portraits" ]; then
   cp -R "$REPO_ROOT/assets/portraits" "$APP_BUNDLE/Contents/Resources/assets/portraits"
 fi
 
+# Third-party notices. Sparkle's MIT licence and the Apache-2.0 grant on the
+# SwiftNIO/Hummingbird tree both require their attribution text to travel with
+# the distributed binary, so the notices ship inside the bundle rather than
+# living only in the repo. Unguarded on purpose: a missing file fails the build
+# instead of quietly shipping an app with no attribution.
+cp "$REPO_ROOT/THIRD-PARTY-NOTICES.md" "$APP_BUNDLE/Contents/Resources/THIRD-PARTY-NOTICES.md"
+
 # OrbitLogo PNGs — copied by SPM into the build's resource bundle; extract
 # them into Contents/Resources/ so Bundle.main can find them via NSImage(named:).
 RESOURCE_BUNDLE="$(find "$APP_DIR/.build" -name "Pulsar_Pulsar.bundle" -path "*/release/*" 2>/dev/null | head -1)"
@@ -96,7 +103,8 @@ if [ -n "$RESOURCE_BUNDLE" ] && [ -d "$RESOURCE_BUNDLE" ]; then
            nebula-mouth-0.png nebula-mouth-1.png nebula-mouth-2.png nebula-mouth-3.png nebula-mouth-4.png nebula-blink.png \
            echo-mouth-0.png echo-mouth-1.png echo-mouth-2.png echo-mouth-3.png echo-mouth-4.png echo-blink.png \
            atlas-mouth-0.png atlas-mouth-1.png atlas-mouth-2.png atlas-mouth-3.png atlas-mouth-4.png atlas-blink.png \
-           iris-mouth-0.png iris-mouth-1.png iris-mouth-2.png iris-mouth-3.png iris-mouth-4.png iris-blink.png; do
+           iris-mouth-0.png iris-mouth-1.png iris-mouth-2.png iris-mouth-3.png iris-mouth-4.png iris-blink.png \
+           meridian-mouth-0.png meridian-mouth-1.png meridian-mouth-2.png meridian-mouth-3.png meridian-mouth-4.png meridian-blink.png; do
     src="$RESOURCE_BUNDLE/$f"
     if [ -f "$src" ]; then
       cp "$src" "$APP_BUNDLE/Contents/Resources/$f"

@@ -11,7 +11,9 @@
 
 </div>
 
-**Pulsar is a voice companion that lives in your menu bar and tells you — out loud — the moment your code is done, so you stop babysitting the screen.** It's a macOS menu-bar app for Claude Code. It speaks with a free, fully-local Mac voice: no account, no API key, no per-word cost, and nothing leaving your machine. Every line is synthesised by the built-in macOS `say` engine and played back on the spot.
+**Pulsar is a voice companion that lives in your menu bar and tells you — out loud — the moment your code is done, so you stop babysitting the screen.** It's a macOS menu-bar app for Claude Code. It speaks with a free, fully-local Mac voice: every line is synthesised on your own machine by the built-in macOS `say` engine — no account, no API key, no network call — and played back on the spot.
+
+The app's only outbound connection is its update check: Sparkle asks github.com whether a newer release exists. Sparkle asks your permission for that the first time Pulsar launches, so you can decline it and leave the only check the one you press yourself.
 
 It has a set of signature lines — *"Pushed."*, *"All green."*, *"Sorted."* — **[Pulsar's canon](CANON.md)**, the fallback floor for any turn Claude doesn't compose its own line on.
 
@@ -36,7 +38,7 @@ If Pulsar earns its spot in your menu bar, a ⭐ helps other people find it.
 - macOS 26 (Tahoe) or later, on Apple Silicon
 - [Claude Code](https://claude.ai/code) — Pulsar installs its skill + hooks into it for you (one click, step 4)
 
-That's the whole list. The voice runs on macOS's built-in `say` — there's no account to create, no key to paste, and no service to reach over the network.
+That's the whole list. The voice runs on macOS's built-in `say` — there's no account to create, no key to paste, and no speech service to reach over the network. (The one connection Pulsar does make is the Sparkle update check; see [Updates](#updates).)
 
 ---
 
@@ -48,7 +50,9 @@ That's the whole list. The voice runs on macOS's built-in `say` — there's no a
 
 Claude Code spawns sub-agents to fan work out — one to search the codebase, another to review it, a third to build. Pulsar makes that visible. When a sub-agent starts, a companion **drone** appears and orbits the Pulsar portrait; when it finishes, the drone fades out. Whichever character is speaking swaps to centre stage and lip-syncs the line, its colour lighting the subtitle glow.
 
-Seven characters, each with its own voice and role:
+**The characters are fictional.** Pulsar, Voyager, Sentinel, Nova, Nebula, Echo, Iris, Atlas, and Meridian are invented lenses — names, voices, and faces given to Claude Code's sub-agents so you can tell the work apart by ear and on screen. None of them is a real person, an employee, or a portrait of anyone; any background or opinion a drone voices is a costume for the job it's doing, not a claim about a human being. If a real person happens to share one of these names, nothing said here is theirs.
+
+Nine characters, each with its own voice and role:
 
 - **Pulsar** — the host and orchestrator. The one you hear most of the time.
 - **Voyager** — explorer. Searching, reading, mapping the code.
@@ -58,6 +62,7 @@ Seven characters, each with its own voice and role:
 - **Echo** — writer. Docs and copy.
 - **Iris** — marketer. Brand, paid, search, SEO, content, and lifecycle — the full marketing lens.
 - **Atlas** — the generalist, for everything that doesn't fit the others.
+- **Meridian** — counsel. Legal, compliance, and licences, in navy with the Ralph voice. Not an automatic category: he's summoned deliberately, with `--with-legal` on a team review, and he joined after the portrait above was drawn.
 
 The swarm is wired through Claude Code's `SubagentStart` and `SubagentStop` hooks (installed for you in step 4). A background sweep clears out any drone whose stop signal never arrived, and the current set survives a restart — so what's on screen matches what's actually running.
 
@@ -120,7 +125,6 @@ ln -s ~/code/pulsar ~/.claude/skills/pulsar
 
 - **Speaks at every Claude Code turn-end** — a completion ping, so you know it's done without watching the screen.
 - **The drone swarm** — sub-agents show up as orbiting companion drones and the speaker lip-syncs. See [Meet the swarm](#meet-the-swarm).
-- **Missions (Task Mode, opt-in)** — every Claude session you've got running, flagged the moment one needs you back. A board in the popover grouping live work by session, with the crew nested under each one. Off by default; flip it on in Settings.
 - **Menu-bar popover** — History, Cache, and Settings tabs. See what was said, replay cached lines, set the persona.
 - **Floating portrait** — an animated portrait appears in the top-left corner while Pulsar is speaking. Draggable, stays across all Spaces, hides when the queue empties.
 - **Mute toggle** — one click in the popover header. The menu-bar icon changes so you know you're muted.
@@ -133,6 +137,8 @@ ln -s ~/code/pulsar ~/.claude/skills/pulsar
 ## Updates
 
 Pulsar uses [Sparkle](https://sparkle-project.org) for automatic updates. When a new release is available, Pulsar prompts you to install it.
+
+This check is the app's only outbound network connection: it reads the signed appcast published with each release on github.com, and nothing else. Sparkle asks on first launch whether it may check automatically — decline, and an update check only ever happens when you press **Check for Updates…** in the Settings tab.
 
 If you need to clear the quarantine flag again after an update, run the same command as before:
 
@@ -162,3 +168,5 @@ Pulsar grew out of [speak](https://github.com/tomc98/speak) by Thomas Csere — 
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+Pulsar ships third-party components (Sparkle, and the Hummingbird/SwiftNIO tree) that carry their own licences. Those licences and the notices they require are reproduced in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), which also ships inside the app at `Pulsar.app/Contents/Resources/THIRD-PARTY-NOTICES.md`.

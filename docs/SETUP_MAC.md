@@ -91,6 +91,19 @@ open -a Pulsar
 launchctl list | grep Pulsar
 ```
 
+### 401 Unauthorized from a manual curl
+Every route except `GET /health` requires the daemon's shared secret, which the
+app writes to `~/.pulsar/daemon-token` (0600) the first time it starts. Pass it:
+```bash
+curl -H "X-Pulsar-Token: $(cat ~/.pulsar/daemon-token)" http://127.0.0.1:7865/settings
+```
+`say.sh` and the hooks read that file themselves — you only need this by hand.
+
+### 400 Host not allowed
+The request's `Host` header wasn't a loopback address on the daemon's port. The
+server accepts `127.0.0.1:7865`, `localhost:7865`, and `[::1]:7865` only — a
+hostname that merely resolves to loopback is rejected on purpose.
+
 ### App won't launch / Gatekeeper blocks it
 The build is unsigned. Strip the quarantine flag:
 ```bash

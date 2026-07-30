@@ -10,6 +10,27 @@
 
 set -e
 
+# --- Pulsar daemon auth ------------------------------------------------------
+# The app mints a random token into ~/.pulsar/daemon-token (0600) when it starts
+# and requires it in the X-Pulsar-Token header on every route except GET /health.
+# GRACEFUL FIRST RUN: if the file is absent (app never launched yet) we send NO
+# header at all — the daemon only enforces once it has a token, so a token-less
+# client still works in that window instead of hard-failing with 401.
+PULSAR_TOKEN_FILE="${PULSAR_TOKEN_FILE:-$HOME/.pulsar/daemon-token}"
+PULSAR_TOKEN=""
+if [ -r "$PULSAR_TOKEN_FILE" ]; then
+  PULSAR_TOKEN="$(tr -d '\r\n' < "$PULSAR_TOKEN_FILE" 2>/dev/null || echo "")"
+fi
+pulsar_curl() {
+  if [ -n "$PULSAR_TOKEN" ]; then
+    curl -H "X-Pulsar-Token: $PULSAR_TOKEN" "$@"
+  else
+    curl "$@"
+  fi
+}
+# ----------------------------------------------------------------------------
+
+
 DAEMON="${DAEMON:-http://127.0.0.1:7865}"
 
 # Canonical Tier 0 phrases. SOURCE OF TRUTH is the `canonContexts` dict in
@@ -81,7 +102,7 @@ ALL_PHRASES=(
 TOTAL=${#ALL_PHRASES[@]}
 
 # Daemon up?
-if ! curl -sf --connect-timeout 2 "$DAEMON/health" >/dev/null 2>&1; then
+if ! pulsar_curl -sf --connect-timeout 2 "$DAEMON/health" >/dev/null 2>&1; then
   echo "Error: daemon not reachable at $DAEMON" >&2
   echo "Start the Pulsar app ('open -a Pulsar') or check the LaunchAgent, then re-run." >&2
   exit 1
@@ -98,7 +119,7 @@ INDEX=0
 for phrase in "${ALL_PHRASES[@]}"; do
   INDEX=$((INDEX + 1))
   BODY=$(python3 -c "import json, sys; print(json.dumps({'text': sys.argv[1], 'cache_only': True}))" "$phrase")
-  RESPONSE=$(curl -sf -X POST -H "Content-Type: application/json" -d "$BODY" "$DAEMON/speak" 2>/dev/null || echo '{"error":"network"}')
+  RESPONSE=$(pulsar_curl -sf -X POST -H "Content-Type: application/json" -d "$BODY" "$DAEMON/speak" 2>/dev/null || echo '{"error":"network"}')
   STATUS=$(echo "$RESPONSE" | python3 -c '
 import sys, json
 try:

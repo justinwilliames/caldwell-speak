@@ -21,11 +21,6 @@ final class DashboardViewModel {
     /// "drones_in_flight" SSE event; rendered as orbiting drones around Pulsar.
     var inFlightDrones: [String: String] = [:]
 
-    /// Live Claude Code sessions for the Missions board, grouped: each session is
-    /// a Pulsar orchestrator parent with its sub-agent drones nested beneath.
-    /// Driven by the "sessions" SSE event + an initial `/sessions` load.
-    var missionSessions: [MissionSession] = []
-
     /// True while any sub-agent is running (SubagentStart → SubagentStop). A
     /// running sub-agent means the live team is at work; each such drone is a
     /// present participant (it orbits, and centres when it speaks).
@@ -198,128 +193,9 @@ final class DashboardViewModel {
             handleSettingsEvent(data)
         case "drones_in_flight":
             handleDronesInFlightEvent(data)
-        case "sessions":
-            handleSessionsEvent(data)
         default:
             break
         }
-    }
-
-    /// A change to the grouped session board, pushed whenever a session has
-    /// activity (turn start/end, sub-agent start/stop, a spoken line, a dismiss).
-    /// Decodes the snake_case payload and maps it to `[MissionSession]`.
-    private func handleSessionsEvent(_ data: Data) {
-        guard let envelope = try? decoder.decode(SessionsEnvelope.self, from: data) else { return }
-        missionSessions = Self.mapSessions(envelope)
-    }
-
-    /// Map the wire envelope to view models: phase string → Phase, last_seen →
-    /// Date, each drone → a .running MissionTask. Client-side belt-and-braces:
-    /// drop sessions whose recency is older than 48 hours, and sort newest-first
-    /// (the server already does both, but a stale reconnect payload can't leak).
-    /// Mirror of `SessionRegistry.activeWindow` — keep the two in lockstep.
-    private static func mapSessions(_ envelope: SessionsEnvelope) -> [MissionSession] {
-        let cutoff = Date().addingTimeInterval(-48 * 3600)
-        return envelope.sessions.compactMap { dto -> MissionSession? in
-            let lastSeen = Date(timeIntervalSince1970: TimeInterval(dto.last_seen))
-            let lastUserMessage = (dto.last_user_message).flatMap {
-                $0 > 0 ? Date(timeIntervalSince1970: TimeInterval($0)) : nil
-            }
-            // The SERVER-RESOLVED status is authoritative when present: "active"
-            // and "working" render as the working phase (with `activeNow` carrying
-            // the live pulse), "waiting" as the paused phase. The raw `phase`
-            // latch survives only as the fallback for an older daemon.
-            let phase: MissionSession.Phase
-            if let status = dto.status {
-                phase = status == "waiting" ? .waiting : .working
-            } else {
-                phase = MissionSession.Phase(rawValue: dto.phase) ?? .working
-            }
-            // Client-side belt-and-braces on the recency window — keyed on the
-            // USER's own activity when the daemon ships it (the board's real
-            // gate), falling back to last_seen against an older daemon.
-            let recency = lastUserMessage ?? lastSeen
-            guard recency > cutoff || !dto.drones.isEmpty else { return nil }
-            let drones = dto.drones.map { d -> MissionTask in
-                // Normalise the category to lowercase HERE — the same rule the
-                // floating swarm applies at every read (inFlightCategories /
-                // activeSpeaker / participantCharacterKeys all `.lowercased()`).
-                // Both views resolve a drone's face + hue through DroneRegistry,
-                // which is case-insensitive, but the Missions parent-face builds a
-                // raw "<category>-mouth-0" frame key that is NOT — so a non-lowercase
-                // category (e.g. "Voyager") would fall back to Pulsar's face on the
-                // board while the swarm still showed the real drone. Lowercasing at
-                // this single decode site keeps the two identities in lockstep
-                // without touching either view's render code.
-                let category = d.category.lowercased()
-                let role = DroneRegistry.role(for: category).capitalized
-                return MissionTask(
-                    id: d.agent_id,
-                    title: role.isEmpty ? "Agent" : role,
-                    category: category,
-                    status: .running,
-                    detail: "Running")
-            }
-            return MissionSession(
-                id: dto.session_id,
-                name: dto.name,
-                label: dto.label,
-                phase: phase,
-                lastSeen: lastSeen,
-                branch: dto.branch ?? "",
-                repo: dto.repo ?? "",
-                lastAction: dto.last_action ?? "",
-                userNamed: dto.user_named ?? false,
-                sidebarTitle: dto.sidebar_title ?? "",
-                activeNow: dto.active_now ?? false,
-                currentAction: dto.current_action ?? "",
-                // Same lowercase normalisation as the nested drones above (and as
-                // the swarm's activeSpeaker) so the parent face + ring on the board
-                // agree with the swarm's centre/orbit identity for the same work.
-                activeCategory: (dto.active_category ?? "").lowercased(),
-                resolvedTitle: dto.title ?? "",
-                stale: dto.stale ?? false,
-                lastUserMessage: lastUserMessage,
-                drones: drones)
-        }
-        .sorted { ($0.lastUserMessage ?? $0.lastSeen) > ($1.lastUserMessage ?? $1.lastSeen) }
-    }
-
-    /// Load the current session board once (on Missions view appear / connect).
-    func loadSessions() async {
-        guard let envelope = try? await api.fetchSessions() else { return }
-        missionSessions = Self.mapSessions(envelope)
-    }
-
-    /// Dismiss a session — optimistically remove it, then tell the daemon.
-    func dismissSession(_ id: String) async {
-        missionSessions.removeAll { $0.id == id }
-        try? await api.dismissSession(id)
-    }
-
-    /// Manually rename a session — the human title OUTRANKS every auto-source and
-    /// is permanent (the LLM titler can never clobber it). Optimistically updates
-    /// the local row, then POSTs to /session/activity with user_named:true. A
-    /// blank/whitespace name is ignored (the daemon never overwrites with empty).
-    func renameSession(_ id: String, to name: String) async {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        // Optimistic local update so the row reflects the new title at once.
-        if let idx = missionSessions.firstIndex(where: { $0.id == id }) {
-            let s = missionSessions[idx]
-            missionSessions[idx] = MissionSession(
-                id: s.id, name: trimmed, label: s.label, phase: s.phase,
-                lastSeen: s.lastSeen, branch: s.branch, repo: s.repo,
-                lastAction: s.lastAction, userNamed: true,
-                sidebarTitle: s.sidebarTitle,
-                activeNow: s.activeNow, currentAction: s.currentAction,
-                activeCategory: s.activeCategory,
-                // Optimistic resolved title too — the server will confirm on the
-                // next sessions broadcast, but the row must show the rename NOW.
-                resolvedTitle: trimmed, stale: s.stale,
-                lastUserMessage: s.lastUserMessage, drones: s.drones)
-        }
-        try? await api.renameSession(id, to: trimmed)
     }
 
     /// A change to the set of in-flight sub-agent drones, pushed whenever a
@@ -588,9 +464,9 @@ final class DashboardViewModel {
         }
     }
 
-    func saveSettings(muted: Bool? = nil, expletivesEnabled: Bool? = nil, canonEnabled: Bool? = nil, floatingHeadEnabled: Bool? = nil, subtitlesEnabled: Bool? = nil, showActiveAgents: Bool? = nil, taskModeEnabled: Bool? = nil, llmTitlesEnabled: Bool? = nil, nativeVoice: String? = nil) async -> SaveResult {
+    func saveSettings(muted: Bool? = nil, expletivesEnabled: Bool? = nil, canonEnabled: Bool? = nil, floatingHeadEnabled: Bool? = nil, subtitlesEnabled: Bool? = nil, showActiveAgents: Bool? = nil, nativeVoice: String? = nil) async -> SaveResult {
         do {
-            let response = try await api.saveSettings(muted: muted, expletivesEnabled: expletivesEnabled, canonEnabled: canonEnabled, floatingHeadEnabled: floatingHeadEnabled, subtitlesEnabled: subtitlesEnabled, showActiveAgents: showActiveAgents, taskModeEnabled: taskModeEnabled, llmTitlesEnabled: llmTitlesEnabled, nativeVoice: nativeVoice)
+            let response = try await api.saveSettings(muted: muted, expletivesEnabled: expletivesEnabled, canonEnabled: canonEnabled, floatingHeadEnabled: floatingHeadEnabled, subtitlesEnabled: subtitlesEnabled, showActiveAgents: showActiveAgents, nativeVoice: nativeVoice)
             if let error = response.error {
                 return .failure(error)
             }
@@ -646,45 +522,6 @@ final class DashboardViewModel {
         settings?.showActiveAgents ?? true
     }
 
-    /// Task Mode: shows the persistent Missions board tab. Default OFF (opt-in).
-    func setTaskModeEnabled(_ on: Bool) async {
-        _ = await saveSettings(taskModeEnabled: on)
-    }
-
-    var isTaskModeEnabled: Bool {
-        settings?.taskModeEnabled ?? false
-    }
-
-    /// AI-generated mission titles. Default OFF — local first-line naming is the
-    /// canonical, fully-on-device default; the LLM title is a disclosed opt-in
-    /// (the session's first message is sent to Claude Haiku).
-    func setLlmTitlesEnabled(_ on: Bool) async {
-        _ = await saveSettings(llmTitlesEnabled: on)
-    }
-
-    var isLlmTitlesEnabled: Bool {
-        settings?.llmTitlesEnabled ?? false
-    }
-
-    /// Live mission rows derived from in-flight sub-agent drones. Each running
-    /// sub-agent becomes a .running mission themed by its drone. This is the
-    /// real, live feed; richer states (.waiting/.blocked/.done) arrive when the
-    /// hooks emit them — the view already renders all four.
-    var missionTasks: [MissionTask] {
-        inFlightDrones
-            .sorted { $0.key < $1.key }
-            .map { agentId, category in
-                MissionTask(
-                    id: agentId,
-                    title: DroneRegistry.role(for: category).capitalized.isEmpty
-                        ? "Agent" : DroneRegistry.role(for: category).capitalized,
-                    category: category,
-                    status: .running,
-                    detail: "Running"
-                )
-            }
-    }
-
     /// Free-mode local voice choice. Empty resets to auto (Daniel Enhanced else
     /// Daniel). Only installed voices are accepted by the daemon.
     func setNativeVoice(_ name: String) async {
@@ -703,20 +540,5 @@ final class DashboardViewModel {
 
     var isMuted: Bool {
         settings?.muted ?? false
-    }
-
-    /// Count of non-dismissed sessions currently PAUSED (turn ended, waiting on
-    /// the user). Drives the ambient menu-bar badge — the push that turns the
-    /// board from a pull dashboard into a dispatch signal. Only meaningful when
-    /// Task Mode is on; the badge view gates on `isTaskModeEnabled` too.
-    var pausedSessionCount: Int {
-        missionSessions.filter { $0.phase == .waiting }.count
-    }
-
-    /// Whether the menu-bar should show the ambient "paused" badge: Task Mode on
-    /// AND at least one session paused. Gated entirely behind Task Mode — no
-    /// badge when the feature is off.
-    var showsPausedBadge: Bool {
-        isTaskModeEnabled && pausedSessionCount > 0
     }
 }

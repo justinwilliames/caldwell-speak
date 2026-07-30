@@ -35,7 +35,8 @@ enum DroneRegistry {
         let color: Color
         let voice: String
         /// Single-character role badge shown in the portrait corner (E=explorer,
-        /// R=reviewer, B=builder, A=artist, W=writer, G=generalist, M=marketer).
+        /// R=reviewer, B=builder, A=artist, W=writer, G=generalist, M=marketer,
+        /// L=counsel).
         let badge: String
         let motion: MotionTrait
     }
@@ -71,6 +72,10 @@ enum DroneRegistry {
     ///   • iris     (F, marketing: brand/paid/search/SEO/content/lifecycle) → Tessa (en-ZA) —
     ///     clear + warm, the welcoming communicator (took Tessa from Echo in the
     ///     2026-07-20 stock-voice shuffle)
+    ///   • meridian (M, legal counsel)        → Ralph    (en-US) — deep, slow, measured;
+    ///     legacy but whitelisted (like Junior), the last humanoid timbre in the stock
+    ///     set. Fits the senior-counsel persona; speaks only when --with-legal summons
+    ///     him in team reviews, so the legacy rasp gets minimal ear-time.
     /// Colours: voyager/nova/nebula unchanged. echo/sentinel/atlas were
     /// re-separated (the old cyan/teal/slate blurred together) per the colour-
     /// distinctness review — echo → deeper teal, sentinel → bluer azure, atlas →
@@ -96,6 +101,8 @@ enum DroneRegistry {
               motion: MotionTrait(bobAmplitude: 2.0, bobFrequency: 0.9,  activeScale: 2.4)),  // deep grape #8040C0 — ΔE>34 from both pulsar-indigo + nebula-magenta
         Drone(category: "iris",     role: "marketer",   color: Color(red: 0.949, green: 0.380, blue: 0.471), voice: "Tessa",   badge: "M",
               motion: MotionTrait(bobAmplitude: 2.2, bobFrequency: 1.15, activeScale: 2.45)), // coral-rose #F26178 — warm, rhythmic; ΔE76≥51 from every sibling
+        Drone(category: "meridian", role: "counsel",    color: Color(red: 0.141, green: 0.259, blue: 0.478), voice: "Ralph",   badge: "L",
+              motion: MotionTrait(bobAmplitude: 1.0, bobFrequency: 0.5,  activeScale: 2.3)),  // deep navy #24427A — near-still, slowest of the cast (counsel doesn't fidget); min ΔE76 41.8 vs pulsar-indigo
         // "unknown" — a neutral catch-all for unrecognised agent categories.
         // Desaturated mid-grey rim so it reads as "generic agent" without competing
         // with any named drone hue. Shares Daniel's voice (Pulsar's), but voice does

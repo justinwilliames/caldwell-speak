@@ -15,13 +15,34 @@
 #
 # Wired in by install-hooks.sh as a Stop hook.
 
+
+# --- Pulsar daemon auth ------------------------------------------------------
+# The app mints a random token into ~/.pulsar/daemon-token (0600) when it starts
+# and requires it in the X-Pulsar-Token header on every route except GET /health.
+# GRACEFUL FIRST RUN: if the file is absent (app never launched yet) we send NO
+# header at all — the daemon only enforces once it has a token, so a token-less
+# client still works in that window instead of hard-failing with 401.
+PULSAR_TOKEN_FILE="${PULSAR_TOKEN_FILE:-$HOME/.pulsar/daemon-token}"
+PULSAR_TOKEN=""
+if [ -r "$PULSAR_TOKEN_FILE" ]; then
+  PULSAR_TOKEN="$(tr -d '\r\n' < "$PULSAR_TOKEN_FILE" 2>/dev/null || echo "")"
+fi
+pulsar_curl() {
+  if [ -n "$PULSAR_TOKEN" ]; then
+    curl -H "X-Pulsar-Token: $PULSAR_TOKEN" "$@"
+  else
+    curl "$@"
+  fi
+}
+# ----------------------------------------------------------------------------
+
 [ -f "$HOME/.claude/chime-off" ] && exit 0
 
 # Defer to Pulsar's voice. Daemon up AND not muted => it'll speak => no chime.
 # Read .muted literally: only an explicit "false" (unmuted) defers. "true",
 # "null", or no daemon all fall through and ring. (Don't use `.muted // true` —
 # jq's // coalesces false to the fallback, which inverts the test.)
-s=$(curl -sf --max-time 1 http://127.0.0.1:7865/settings 2>/dev/null)
+s=$(pulsar_curl -sf --max-time 1 http://127.0.0.1:7865/settings 2>/dev/null)
 if [ -n "$s" ]; then
   m=$(printf '%s' "$s" | /usr/bin/jq -r '.muted' 2>/dev/null)
   [ "$m" = "false" ] && exit 0

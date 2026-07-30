@@ -10,6 +10,27 @@
 # Claude sub-agent — it just drives the overlay so you can see how the swarm looks.
 set -euo pipefail
 
+# --- Pulsar daemon auth ------------------------------------------------------
+# The app mints a random token into ~/.pulsar/daemon-token (0600) when it starts
+# and requires it in the X-Pulsar-Token header on every route except GET /health.
+# GRACEFUL FIRST RUN: if the file is absent (app never launched yet) we send NO
+# header at all — the daemon only enforces once it has a token, so a token-less
+# client still works in that window instead of hard-failing with 401.
+PULSAR_TOKEN_FILE="${PULSAR_TOKEN_FILE:-$HOME/.pulsar/daemon-token}"
+PULSAR_TOKEN=""
+if [ -r "$PULSAR_TOKEN_FILE" ]; then
+  PULSAR_TOKEN="$(tr -d '\r\n' < "$PULSAR_TOKEN_FILE" 2>/dev/null || echo "")"
+fi
+pulsar_curl() {
+  if [ -n "$PULSAR_TOKEN" ]; then
+    curl -H "X-Pulsar-Token: $PULSAR_TOKEN" "$@"
+  else
+    curl "$@"
+  fi
+}
+# ----------------------------------------------------------------------------
+
+
 D="http://127.0.0.1:${SPEAK_PORT:-7865}"
 SAY="$(cd "$(dirname "$0")" && pwd)/say.sh"
 
@@ -18,7 +39,7 @@ case "$N" in ''|*[!0-9]*) N=3 ;; esac
 [ "$N" -lt 1 ] && N=1
 [ "$N" -gt 6 ] && N=6
 
-if ! curl -sf --max-time 2 "$D/health" >/dev/null 2>&1; then
+if ! pulsar_curl -sf --max-time 2 "$D/health" >/dev/null 2>&1; then
   echo "Pulsar app isn't running (no daemon on ${D}). Open the app first." >&2
   exit 1
 fi
@@ -36,13 +57,13 @@ LINES=(
 ids=()
 for i in $(seq 0 $((N - 1))); do
   c="${CATS[$i]}"; id="test-$c"; ids+=("$id")
-  curl -sf --max-time 2 -X POST -H 'Content-Type: application/json' \
+  pulsar_curl -sf --max-time 2 -X POST -H 'Content-Type: application/json' \
     -d "{\"agent_id\":\"$id\",\"category\":\"$c\"}" "$D/subagent/start" >/dev/null || true
 done
 
 cleanup() {
   for id in "${ids[@]}"; do
-    curl -sf --max-time 2 -X POST -H 'Content-Type: application/json' \
+    pulsar_curl -sf --max-time 2 -X POST -H 'Content-Type: application/json' \
       -d "{\"agent_id\":\"$id\"}" "$D/subagent/stop" >/dev/null 2>&1 || true
   done
 }
