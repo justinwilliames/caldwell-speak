@@ -95,6 +95,34 @@ a machine has a gender.
 **Axes:** `jaw` = jaw/chassis width (1 narrow → 5 broad) · `eye` = eye-size ratio
 to face (1 small → 5 large) · `wear` = 0–3 · `edge` = 1 faceted → 5 soft-round.
 
+**EXPRESSION — the fifth axis (Justin's ruling, 2026-07-30):** *"make sure their
+personas match their faces (e.g. some will look more friendly than others, more
+serious, some more playful)."* A machined face still has expression; it just comes
+from GEOMETRY rather than drawing. The three mechanisms, all physical:
+- **Brow-plate rake** — raked down over the eyes = severe/hooded; level = neutral;
+  lifted with more forehead showing = open, alert, friendly.
+- **Mouth-aperture cant** — ends canted UP = warm (this is how a machine smiles);
+  dead level with squared corners = neutral/clipped; ends canted DOWN or the
+  aperture pinched narrow = grim.
+- **Iris aperture openness** — blades wide open with a large lit element = alert,
+  eager, welcoming; stopped down to a narrow polygon = scrutinising, guarded.
+
+This is what recovers what the machined direction costs: the pilot's honest finding
+was that Voyager *"looked pleased to see you"* before and reads stern after. He
+should read WARM in machined terms — that is a spec requirement now, not a nicety.
+
+| Drone | Expression target | Brow / Cant / Iris |
+|---|---|---|
+| voyager | warm, gruff, glad to see you | lifted / up / wide |
+| sentinel | severe, scrutinising, exact | level-hard / level squared / stopped down |
+| nova | eager, bright, playful | lifted high / up / widest |
+| nebula | warm, dreamy, lyrical | soft-lifted / gently up / wide |
+| echo | playful, keen, youngest | lifted high / up / widest |
+| iris | welcoming, poised, confident | level-warm / slight up / open |
+| atlas | calm, steady, unflappable | level / level / mid |
+| meridian | grave, measured, senior | heavy and hooded / level and tight / stopped down |
+| pulsar | warm authority — the host | open / slight up / wide |
+
 | Drone | Colour | Voice | jaw / eye / wear / edge | PRESERVE these features |
 |---|---|---|---|---|
 | voyager | amber `#F2A83B` | Fred — gruff, retro, older | 4 / 3 / 3 / 3 | **REFERENCE — do not regenerate** |
@@ -252,3 +280,32 @@ gear. All §F gates green. Provenance recorded.
    drone's parts is a factory-clone failure. Used so far: Sentinel = rubber
    concertina neck boot + woven ballistic collar; Nova = quilted shoulder pad +
    ribbed rubber torch hose; Echo = open-cell foam windscreen + braided cable sleeve.
+
+## J. Machined-face pilot learnings (binding — from Voyager + Sentinel)
+
+1. **Two-stage chain beats one shot.** Base face-rebuild prompt → then a NARROW
+   correction pass whose input is the stage-1 output, opening with a *"what the last
+   render got right — preserve all of it"* block. That block is what stops the
+   generator trading away wins while fixing a miss.
+2. **Point at a part the input already gets right.** The single highest-leverage
+   line in the winning Voyager prompt was: *"Look at the FOREHEAD LAMP in Image 1 —
+   a turned brass bezel, a stepped ring, a deep-set warm amber element. That part is
+   the reference for how the new eyes and mouth must be built."* Every drone has an
+   equivalent already-machined part. Find it and point at it.
+3. **Name the failure in the generator's own terms:** *"two flat glowing rings with
+   black cartoon pupils and a highlight dot, and a grin shaped like a decal — those
+   are GRAPHICS, not machinery."* Naming beats describing the target alone.
+4. **Fold these three corrections into the BASE prompt** (they were needed as a
+   second pass on both pilots): the lit glass objective must fill ~55-60% of turret
+   diameter or the eyes read as dark rings with a speck at 52px; the mouth cavity
+   must be explicitly BACKLIT or it reads as a dead grey box; a secondary optic must
+   stand visibly PROUD on a bracket or it collapses into the eye.
+5. **Add to the house block:** *"no glowing bars or lights anywhere on the face
+   other than the two eye elements and the mouth interior."* Voyager's m4 grew two
+   stray amber bars under the eyes when a correction block dropped that line.
+6. **Mechanising the eyes IMPROVED thumbnail identity, both pilots.** Sentinel's
+   accent-carrying pixels went 12.9% → 18.0% at 52px; Voyager's amber outlines used
+   to dither into rings and now punch through as solid lamps. The §A4 worry was
+   unfounded — a lit glass element beats a drawn ring at small size.
+7. **Run gens BACKGROUNDED.** The foreground shell timed out at 10 minutes while
+   codex kept working and still wrote the file.
