@@ -28,7 +28,7 @@ gear, silhouette and props. Only the *finish* changes.
    shading. (Value + finish are invariant; *hue* is not — see B4.)
 3. **Accent colour is PHYSICAL METAL, not neon tape.** Anodised/enamelled trim
    panels, rings and bezels catching real light. Quantified: accent occupies
-   **≥6 discrete physical parts**, at **45–65% saturation**; true emissive glow is
+   **≥6 discrete physical parts**, at **45-70% saturation**; true emissive glow is
    limited to **≤5 sites** (eyes, mouth, chest sigil, and at most two others),
    sharing the metal's hue. No continuous 100%-saturation light strips.
 4. **Eyes: round lit rings, dark pupil, single white catchlight**, read through the
@@ -45,14 +45,9 @@ gear, silhouette and props. Only the *finish* changes.
    Echo's waveforms and Nebula's colour motes currently hover in the background
    plane — they must become emitters, etched plates, or physical particles.
 8. **One light source.** Warm key from upper-left, cool rim from behind-right,
-   shallow depth of field. Both eye catchlights sit at **10 o'clock** in every
-   portrait — a builder can verify this by eye in one second.
-9. **Background: deep navy gradient vignette.** Corners ≈ `#0B1230`, centre-behind-
-   head ≈ `#1A2550`, tolerance ±12 per channel. Never black, never hue-matched to
-   the drone.
-10. **Framing: head + upper torso fill the square to all four edges.** Tight hero
-    crop. This is load-bearing at thumbnail: it's what keeps accessory silhouettes
-    inside the frame.
+   shallow depth of field. Both eye catchlights sit at the **upper-RIGHT of the pupil (~1-2 o'clock)**, identical in both eyes — measured off the reference master, which is where the house look actually is. (Rev 2 said 10 o'clock; the pilot proved that is achievable but moves the drone AWAY from Voyager. Reference measured 2026-07-30.)
+9. **Background: deep navy gradient vignette.** Corners ≈ `#02031A`, centre-behind-head ≈ `#1A2550`, tolerance ±14 per channel. Never hue-matched to the drone. (Re-baselined from the reference: voyager.png corners measure (2,3,23) and (1,2,25) — Rev 2's `#0B1230` was unreachable, four escalating attempts never got past (6,10,34).)
+10. **Framing: shoulders and torso run off the LEFT, RIGHT and BOTTOM edges; the head is NEVER cropped.** The complete crown and any antenna tip sit inside the frame with a thin margin above. (Rev 2 demanded all four edges; the reference itself touches only the bottom — top 0, left 0, right 0, bottom 124. Fill comes from the torso, never from slicing the skull.)
 
 ## B. MUST VARY — or the cast becomes nine identical robots
 
@@ -155,13 +150,11 @@ Run over all eight in one pass (~40 lines of numpy):
 1. **Hue vs registry literal: ±20°** (tightened from ±35°). Nova's current master
    sits at Δ32.8° — it must be brought inside tolerance by its own re-render, not
    by loosening the gate.
-2. **Cross-drone distinctness: ≥40°** from every *other* registry literal.
-   Deliberately check the two confusable clusters: azure/teal/green and
-   grape/indigo/magenta.
+2. **Cross-drone distinctness: ≥15°** from every other registry literal. (Rev 2 said 40°, which is mathematically impossible for this palette before a single render: sentinel↔meridian 15.2°, meridian↔pulsar 15.4°, sentinel↔echo 26.8°, sentinel↔pulsar 30.5°, atlas↔pulsar 35.5°. In the blue cluster, separation is carried by SILHOUETTE, not hue — which is why §B1 is mandatory.)
 3. **Identity distance from the previous master, banded `0.15 ≤ d ≤ 0.55`.**
    Below = nothing actually changed; above = identity drifted.
 4. **Background: corner pixels navy** within §A9 tolerance.
-5. **Framing: subject touches all four edges** (fill-the-square).
+5. **Framing: subject touches the BOTTOM edge; thin margin above the crown; head uncropped** (see §A10 as amended).
 6. **Thumbnail acceptance:** downsample to 52px — the drone must be identifiable
    from silhouette + eye colour alone, in under a second. This is the product's
    actual job; a master that fails it fails, however beautiful at full size.
