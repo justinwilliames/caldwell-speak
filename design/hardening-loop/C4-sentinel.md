@@ -1,0 +1,24 @@
+# C4 — Sentinel review
+
+**Verdict: going dry.** One confirmed finding (installer clobber gap), everything else held. Cycles 2-3 built solid concurrency primitives — the actor isolation and the lock-guarded continuation are both correctly structured, not just "looks right."
+
+## CONFIRMED
+
+**1. `ClaudeIntegrationInstaller.swift:214-232` + `:242-252` — pulsar-team install has no ownership check, will clobber a user's own skill dir.**
+`copyPayload` computes `teamDest = skillDir.deletingLastPathComponent()/pulsar-team` (i.e. `~/.claude/skills/pulsar-team`, a sibling of the `pulsar` skill dir — confirmed intentional and path-safe, the segment is a hardcoded literal with no user input, so no traversal risk). But the actual write goes through `copyReplacing` (line 242), which unconditionally does `if fm.fileExists(dest) { removeItem }` then `copyItem` — no marker, no hash check, no "is this ours" test. Contrast with the hook-wiring path (`upsertHook`/its inverse, ~line 590), which explicitly matches an installed-path suffix before touching anything — that ownership discipline exists in this file but was never extended to the file-copy path. Same gap applies to the whole-skill-dir removal on uninstall (`:164-171`): `fm.removeItem(at: skillDir)` with no ownership check either, though collision odds are lower since that dir is named `pulsar` specifically.
+**Failure scenario:** a user who has hand-authored their own `~/.claude/skills/pulsar-team/SKILL.md` (plausible name for anyone building a similar review-team skill) clicks Setup — their file is silently deleted and replaced with Pulsar's bundled version. No warning, no backup.
+**Minimal fix:** before writing `teamDest`, check for a Pulsar-ownership marker (e.g. compare against a known hash, or drop a hidden `.pulsar-installed` sentinel on first install and require its presence before overwriting on subsequent installs); skip + log if the dir exists without one.
+
+## PLAUSIBLE (one-liners)
+
+- `AudioQueueActor.swift:120-124` — watchdog calls `proc.terminate()` (SIGTERM only, no SIGKILL escalation); if `afinfo` ever ignores SIGTERM, `terminationHandler` never fires and the continuation hangs forever, stalling the whole worker on that line. Untested (afinfo is well-behaved in practice) but no fallback exists.
+- `AudioQueueActor.swift:1248-1253` — `holdIfMuted`'s `queue.insert(entry, at: 0)` can jump a resuming held line ahead of a priority entry that was enqueued during the mute window (ordering nuance, not corruption — actor is single-threaded so no race).
+
+## What I could not break
+
+1. **ContinuationBox double-resume**: structurally impossible, not just lock-defended. Only one call site can ever invoke `box.resume()` per run — `terminationHandler` fires exactly once (on natural exit or after watchdog's `terminate()`), and the `proc.run()` throw path nils out `terminationHandler` before its own `box.resume(throwing:)`. The `NSLock` + `resumed` flag is defense in depth, not the only guard. Watchdog is cancelled on every path (success, throw, and after continuation returns). Pipe read happens only after termination is confirmed, so large `afinfo` output cannot deadlock — the child has already exited and closed its write end by the time `readDataToEndOfFile()` runs.
+2. **holdIfMuted double-hold**: the first gate (`playEntry` entry, :1261) returns immediately when held, so execution never reaches the second gate (:1288) in the same call — one hold per pass is structurally guaranteed. No queue corruption possible; `AudioQueueActor` is a Swift `actor` (line 311), so `queue` mutations are serialized, not raced.
+3. **speech.jsonl rotation**: single `static let speechLogLock = NSLock()` guards the only writer (`appendSpeechRecord`), and `rotateSpeechLogIfNeeded()` runs under that same lock before the existence check/append — no window for a concurrent append to hit a renamed-away file. Rename (not copy+truncate) preserves the archive's 0600 mode. Existing-archive case handled (`removeItem` before `moveItem`).
+4. **Auth surface**: live-probed against the daemon at 127.0.0.1:7865 with the real token. Only `/health` is open (200 with no header); `/queue`, `/settings`, `POST /speak`, a bogus route, and a bad-token request all correctly 401 — including the unknown route, confirming the "covers 404s too" claim in the comment at DaemonAuth.swift:307. Token is read-existing-first (`:114-122`), so a daemon restart does NOT invalidate a shell's cached token — by design, not accidental; a shell only fails (loudly, 401, never silently) if the token file itself is deleted/rotated out from under it.
+
+Files touched: `/Users/justin/code/pulsar/macos/Pulsar/Sources/Engine/AudioQueueActor.swift`, `/Users/justin/code/pulsar/macos/Pulsar/Sources/HTTPServer/DaemonAuth.swift`, `/Users/justin/code/pulsar/macos/Pulsar/Sources/Engine/ClaudeIntegrationInstaller.swift`.

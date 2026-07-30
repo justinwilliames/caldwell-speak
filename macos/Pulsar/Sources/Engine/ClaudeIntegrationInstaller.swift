@@ -170,6 +170,20 @@ struct ClaudeIntegrationInstaller {
             }
         }
 
+        // The sibling pulsar-team skill, same ownership discipline as install:
+        // only remove a dir whose SKILL.md is ours. A user's hand-authored skill
+        // of that name survives an uninstall untouched.
+        let teamDir = claudeDir
+            .appendingPathComponent("skills", isDirectory: true)
+            .appendingPathComponent("pulsar-team", isDirectory: true)
+        if fm.fileExists(atPath: teamDir.path) {
+            let marker = teamDir.appendingPathComponent("SKILL.md")
+            let body = (try? String(contentsOf: marker, encoding: .utf8)) ?? ""
+            if body.contains("name: pulsar-team") {
+                try? fm.removeItem(at: teamDir)
+            }
+        }
+
         return UninstallResult(
             settingsPath: settingsPath.path,
             backupPath: wiring.backupPath,
@@ -217,16 +231,31 @@ struct ClaudeIntegrationInstaller {
             if fm.fileExists(atPath: teamSrc.path) {
                 let teamDest = skillDir.deletingLastPathComponent()
                     .appendingPathComponent("pulsar-team", isDirectory: true)
-                let teamScripts = teamDest.appendingPathComponent("scripts", isDirectory: true)
-                try fm.createDirectory(at: teamScripts, withIntermediateDirectories: true)
-                try copyReplacing(teamSrc.appendingPathComponent("SKILL.md"),
-                                  to: teamDest.appendingPathComponent("SKILL.md"))
-                let srcScripts = teamSrc.appendingPathComponent("scripts", isDirectory: true)
-                if let names = try? fm.contentsOfDirectory(atPath: srcScripts.path) {
-                    for name in names where name.hasSuffix(".sh") {
-                        let dest = teamScripts.appendingPathComponent(name)
-                        try copyReplacing(srcScripts.appendingPathComponent(name), to: dest)
-                        try fm.setAttributes(execPerms, ofItemAtPath: dest.path)
+                // OWNERSHIP CHECK, matching the hook-wiring path's discipline:
+                // only overwrite a pulsar-team dir WE installed. A user who has
+                // hand-authored their own skill of that name would otherwise have
+                // it silently deleted by copyReplacing on Setup — the one thing an
+                // installer must never do to a file it did not create. The marker
+                // is the skill's own frontmatter `name: pulsar-team`, which our
+                // shipped SKILL.md always carries; anything else is foreign and
+                // left strictly alone.
+                let destSkill = teamDest.appendingPathComponent("SKILL.md")
+                var foreign = false
+                if fm.fileExists(atPath: teamDest.path) {
+                    let existing = (try? String(contentsOf: destSkill, encoding: .utf8)) ?? ""
+                    foreign = !existing.contains("name: pulsar-team")
+                }
+                if !foreign {
+                    let teamScripts = teamDest.appendingPathComponent("scripts", isDirectory: true)
+                    try fm.createDirectory(at: teamScripts, withIntermediateDirectories: true)
+                    try copyReplacing(teamSrc.appendingPathComponent("SKILL.md"), to: destSkill)
+                    let srcScripts = teamSrc.appendingPathComponent("scripts", isDirectory: true)
+                    if let names = try? fm.contentsOfDirectory(atPath: srcScripts.path) {
+                        for name in names where name.hasSuffix(".sh") {
+                            let dest = teamScripts.appendingPathComponent(name)
+                            try copyReplacing(srcScripts.appendingPathComponent(name), to: dest)
+                            try fm.setAttributes(execPerms, ofItemAtPath: dest.path)
+                        }
                     }
                 }
             }

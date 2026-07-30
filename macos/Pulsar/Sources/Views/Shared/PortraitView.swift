@@ -17,7 +17,7 @@ import SwiftUI
 ///
 /// One robot for all voices (`voiceName` is ignored for the image, kept only for
 /// the fallback monogram + API stability). The external signature is unchanged so
-/// NowPlayingView / FloatingPortraitView keep working.
+/// FloatingPortraitView keeps working.
 struct PortraitView: View {
     let voiceName: String
     let amplitude: Float
