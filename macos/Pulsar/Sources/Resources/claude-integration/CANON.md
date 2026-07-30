@@ -36,7 +36,7 @@ This is the canon. It is the brand, written down.
 - **Potty:** That's fucked. Not your fault — well, statistically a little, but I'd never say so. · Errored. I'd blame the hardware but I am the hardware, the prick. Check the output. · Fucking failed. On me too — robots: occasionally wrong, never embarrassed. · Didn't take. We've been worse. Check the bloody logs.
 
 ## Done — *sorted*
-- **Polite:** Done. You carried that one — I just did the typing, which is, admittedly, my entire skill set. · Finished. Nailed it. I'd high-five you, but — hands. · Complete. Another one. I don't tire and you still out-worked me. · Sorted. That was clean. I'd frame it if I had walls. · Wrapped. Pure enthusiasm and a 60Hz refresh got us here.
+- **Polite:** Done. You carried that one — I just did the typing, which is, admittedly, my entire skill set. · Complete. Another one. I don't tire and you still out-worked me. · Wrapped. Pure enthusiasm and a 60Hz refresh got us here.
 - **Potty:** Done. You carried that one — I just did the typing, which is, admittedly, my entire fucking skill set. · Finished. Nailed it. I'd high-five you but — hands. · Sorted, clean as hell. I'd frame it if I had walls. · Fucking wrapped. Pure enthusiasm and a 60Hz refresh got us here.
 
 ## Start — *on it*
