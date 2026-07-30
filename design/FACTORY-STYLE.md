@@ -472,3 +472,63 @@ Pilot **Meridian** first (biggest change: armour + framing + face + mechanism). 
 iris, atlas. One unit per turn, sequential gens, backgrounded, ≤4 attempts each,
 MAX THREE DELTAS PER RETRY. Then frames (§E4 sheet + cv2 ECC, gates in §E4.5/4.6),
 then assets, then verify. `git push` is GATED — halt and notify.
+
+## R8.10 — Two corrections from the frames pilot (Justin, 2026-07-30 ~23:15)
+
+**(a) THE MASTER MUST SHOW THE MOUTH FULLY CLOSED.** *"in this static one his mouth
+is already half open too — so make sure it can be fully closed as well."* Meridian's
+approved master renders the jaw slightly parted, which means frame 0 has nowhere to
+close TO — the resting state should be sealed. **Every master renders with the mouth
+SEALED SHUT:** plates seated metal-on-metal, a tight parting seam, teeth interlocked
+in their sockets, minimal interior light. The mechanism must still be legible (pins,
+knuckles, tracks visible) so a viewer sees how it *would* open — but the default state
+is closed. Frame 0 then matches the master, and frames 1-4 open from a true zero.
+Meridian's master needs one corrective pass for this.
+
+**(b) FACIAL GEOMETRY VARIES WITH CHARACTER — keep who they already are.**
+*"remember some of the other agents are more friendly-looking etc — and will have
+rounder more friendly mouths, eyes and facial shapes. I still want to retain the
+general feeling of each of them. They should still feel like their original
+characters just enhanced."* Meridian is the cast's severe extreme — square teeth,
+hard chamfers, a heavy lintel brow, narrow stopped-down irises. **Do NOT carry his
+geometry to the friendly units.** The MECHANISM is shared (iris assembly with a
+pupil; multi-part jaw on pivots with a lit cavity); its SHAPE LANGUAGE follows the
+character:
+| Character read | Eyes | Mouth aperture | Face plates |
+|---|---|---|---|
+| voyager (warm, gruff) | large round irises | wide, softly curved, generous | rounded plates, soft chamfers |
+| sentinel (precise) | medium, crisp circular | narrow, level, squared | faceted, hard chamfers |
+| nova (eager) | LARGE round, wide-racked | broad, curved UP, big travel | soft-radiused, friendly |
+| nebula (lyrical) | large, soft round | gently curved up, flowing | most filleted in the cast |
+| echo (playful, youngest) | LARGEST round irises | rounded, up-canted, wide | softest, rounded, chunky |
+| iris (welcoming) | large round, open | softly curved, slight up-cant | elegant curves |
+| atlas (calm) | medium round | level but softly cornered | broad, mid chamfers |
+| meridian (grave) | small, stopped down | level, tight, squared teeth | heavy, hard, hooded |
+| pulsar (warm host) | large round, open | curved, welcoming, up-cant | rounded, approachable |
+**The test: each redesign must still be recognisable as THAT character to someone who
+knew the old cast — enhanced, not replaced.** Compare each render against the unit's
+pre-Rev-8 master and confirm the family resemblance survived; if it reads as a new
+robot wearing the old colour, it fails.
+
+## R8.11 — Frames pipeline, PROVEN (carry to all nine)
+The pilot passed with no mechanism change needed. Reusable specifics:
+- **3×2 grid at 1536×1024** (six exact 512×512 cells) — codex will not take a 6:1
+  strip. Cells land on exact pixel boundaries; crop at width/3, height/2.
+- **Mask the mouth band OUT of the ECC alignment input**, or the mechanism change
+  drives the alignment. MOTION_EUCLIDEAN sufficed on all frames; AFFINE never fired.
+  Residuals ≤0.92px, scale 1.0000.
+- **Pin registration with explicit pixel targets per cell** (crown N px below cell
+  top, eye centre line, mouth parting line, helmet span) — this is what produced
+  sub-pixel residuals across independent re-renders.
+- **Name the PARTS that must become visible** as it opens (teeth clearing sockets,
+  pins at the end of their tracks, linkage arms in the gap) plus a numeric gap target.
+  Naming parts is what stopped the generator brightening a fill instead.
+- **Gate recalibration (pilot finding):** the spec's 6.19/26.45/12.38% figures were
+  measured on 1024px sources, not the shipped 362px frames — on the shipped surface
+  the real Voyager reference is 1.04/4.85/3.33%, so the absolute ≥8%/≥5% thresholds
+  are mis-scaled and Voyager himself would fail them. **Use the geometric test as
+  primary: the aperture GAP must grow monotonically (Meridian: 13→60px, 4.6×) and the
+  change bbox must span the whole frame** (a change confined to a small box is the
+  coloured-overlay fake — the shipped Rev 4 Meridian frames changed 97% of pixels
+  inside an 89×13px box and nothing outside it). Blink: judge per-eye-box (≥12%),
+  not full-frame.
