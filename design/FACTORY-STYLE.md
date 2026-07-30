@@ -532,3 +532,23 @@ The pilot passed with no mechanism change needed. Reusable specifics:
   coloured-overlay fake — the shipped Rev 4 Meridian frames changed 97% of pixels
   inside an 89×13px box and nothing outside it). Blink: judge per-eye-box (≥12%),
   not full-frame.
+
+## R8.12 — Maximum jaw travel: dial it back (Justin, 2026-07-31)
+
+*"his mouth looks like it has extended a little bit too far - do slightly less."*
+The pilot's frame 4 opened to a **60px gap at 362px** (4.6× the closed seam). That
+is past the point where it reads as speech and starts to read as a hinge failure.
+
+**New target for frame 4 (widest): ~40-45px gap at 362px** — roughly 3-3.5× the
+closed seam, not 4.6×. The intermediate frames scale with it:
+| frame | gap @362 (target) | reads as |
+|---|---|---|
+| 0 | sealed, 0-8px seam | closed, plates seated |
+| 1 | ~14px | barely parted |
+| 2 | ~24px | mid |
+| 3 | ~34px | open |
+| 4 | **~40-45px** | widest — a wide vowel, NOT a dropped jaw |
+Keep the mechanism identical (teeth clearing sockets, pins in tracks, linkage
+visible, lit cavity) — only the maximum travel reduces. The linkage should still be
+visible at frame 3-4; if pulling the travel back hides it, favour showing the
+mechanism over hitting the exact number.
