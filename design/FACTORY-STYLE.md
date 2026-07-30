@@ -571,3 +571,110 @@ eyes — voyager, nova, echo, iris, pulsar, nebula. When the mouth cants up, the
 must NOT rise into the eye zone: cant the *centre* line, keep the arc's extremities
 below the clearance band. Check this at 52px too — if the eye and mouth merge into a
 single blob at thumbnail size, it fails.
+
+---
+
+# REV 9 — EMOTIVE TARGETS, SUBTLE MOUTHS, PER-UNIT VOICE (Justin, 2026-07-31)
+
+Rev 8 delivered the machinery. Rev 9 fixes what the machinery did to the
+CHARACTERS. Justin's verdict on the Rev 8 cast: *"The fact that their mouths are
+like zig-zaggy/interlocked makes them look creepy and less friendly. The only one
+I am sold on is Meridian."*
+
+## R9.1 — THE TEETH ARE THE PROBLEM. Kill them.
+
+The interlocking-teeth jaw reads as a **grimace** on every face except the one
+character who is supposed to be severe. It was carried cast-wide because it made
+the mechanism legible; it made eight units creepy.
+
+**NEW MOUTH STANDARD — a small, subtle, moving SLIT.** Justin's reference is the
+ORIGINAL Pulsar: *"mouths can be smaller and more subtle like a small slit that
+moves like the original pulsar had. The mechanical movement is good but make it
+much more subtle and smaller."*
+
+- **NO teeth. NO zig-zag. NO castellations. NO interlocking lugs.** Not on any
+  unit. The parting line is a clean machined SEAM, straight or gently curved.
+- **Much SMALLER.** The aperture is a slim horizontal slot, roughly **45-60% of
+  the width** the Rev 8 mouths occupied, and shallow.
+- **The mechanism stays, but quietly.** Two machined plates meeting on a clean
+  seam, with pivot pins and a fine clearance gap visible at the ends. It should
+  read as *a machine that can open its mouth*, not as *a machine showing its
+  teeth*. Legibility now comes from the pins and the seam, not from dentition.
+- **EXCEPTION — Meridian keeps his current mouth.** He is the one unit Justin
+  approved. His severity is the point.
+
+## R9.2 — TRAVEL: much less. Smoother, fewer frames of motion.
+
+*"Mouths open too much in the frames — the mouths don't need to open so wide,
+which makes them smoother with less frames if they open less for speech."*
+
+| frame | NEW gap @362 | (was Rev 8) |
+|---|---|---|
+| 0 | sealed, 0-4px seam | 0-8 |
+| 1 | ~7px | 14 |
+| 2 | ~12px | 24 |
+| 3 | ~17px | 34 |
+| 4 | **~22px max** | 40-45 |
+A 22px opening on a 362px portrait is a speaking mouth. 45px is a yawn. Smaller
+travel also means the frames blend more smoothly — that is the point.
+
+## R9.3 — PER-UNIT EMOTIVE TARGETS (Justin's list, binding)
+
+This is now the primary character spec. Everything — face geometry, posture,
+glow, gear — serves the emotive read.
+
+| Unit | Emotive target | Geometry that delivers it |
+|---|---|---|
+| **pulsar** | friendly, competent, helpful | open lifted brow, large round irises, gentle slight-up seam, no hard angles; the most welcoming face |
+| **voyager** | battle-worn, experienced, friendly | heavy wear and burnishing, warm open brow, soft up-curved seam, crow's-foot panel lines at the eye corners; a veteran who's pleased to see you |
+| **sentinel** | competent, intelligent, insightful, **smug** | ONE brow plate raised higher than the other (the smirk is in the brow asymmetry), a slight single-sided seam lift, crisp precise plates. Smug = knowing, not sneering |
+| **nova** | tough, strong, serious, **deadpan** | *(CHANGED from eager/playful)* level brow, level seam, heavier squarer jaw plate, medium irises, planted stance. Zero smile. Deadpan is stillness, not scowling |
+| **nebula** | creative, eccentric, joyful, contented | asymmetric or tilted crown element, softest fillets, clearly up-curved seam, wide bright irises; the happiest unit in the cast |
+| **echo** | young, creative, swish, sleek, friendly | SLEEK — slimmer, more streamlined plates than Rev 8's chunky read; large irises, light up-curved seam, minimal bulk. Swish means elegant-fast, not cute |
+| **iris** | smart, intelligent, creative, **angelic**, high-tech, friendly | the halo is the angelic cue — make it luminous and clean; refined slim plates, bright open irises, serene slight-up seam, the most *high-tech* finish in the cast |
+| **atlas** | robotic, hardened, rough around the edges, stern, gets the job done | *(CHANGED from calm/neutral)* heaviest wear, chipped and scuffed plate, level-to-slightly-down brow, dead-level seam, blunt utilitarian forms. The least decorated unit |
+| **meridian** | smug, deadpan, lawyer-like, doesn't care if others like him, serious | KEEP the approved face and mouth. Add a faint brow asymmetry for the smug read |
+
+## R9.4 — NAMED FIXES
+
+- **SENTINEL'S SECOND EYE.** *"Sentinel's second eye is looking off to the side
+  which makes her look silly."* The scanner optic currently sits off-axis and
+  reads as a wandering eye. **Both eyes must look FORWARD, parallel, at the
+  viewer.** Mount the scanner optic coaxially in front of one eye or on a brow
+  rail ABOVE the eye line — never beside it pointing away.
+- **VOYAGER'S GOGGLES.** *"Voyager's goggles are still incomplete — it looks like
+  the mouth area has been layered over it."* The goggle assembly must be a
+  COMPLETE, continuous piece of hardware with an unbroken lower rim, sitting
+  clearly ABOVE and SEPARATE from the mouth zone. Nothing overlaps or truncates
+  it. (This is also §R8.13 clearance, failing in a new way.)
+- **MERIDIAN'S GLOW + SCALES.** *"his current design is quite good but not enough
+  glowing parts and the scales need to be more subtle like the glowing part of the
+  other robots."* Add glowing accents to match the cast's powered-up level — lit
+  seams in recesses, emitter beads, gorget lap glow. And **shrink the scales
+  badge**: it currently dominates his chest. It should read like the other units'
+  chest cores — a compact lit element, with the scales as a subtle motif WITHIN
+  or OVER the glow, not a large brass ornament sitting on top of it.
+
+## R9.5 — VOICE: each unit's own humour, or none (Justin)
+
+*"Remove forced jokes and humour about not having hands etc — each one should have
+their own style, their own humour... or lack of humour."*
+
+The house tic (robot-can't-high-five, no-hands, circuits-malfunctioning) flattens
+nine characters into one voice. **It is retired.** Each unit's spoken lines and
+written voice follow its own register:
+
+| Unit | Humour register |
+|---|---|
+| pulsar | warm, encouraging, lightly funny — the host who makes you feel capable |
+| voyager | dry, understated, veteran's gallows humour — earned, never eager |
+| sentinel | **smug**, precise, faintly amused at other people's mistakes |
+| nova | **deadpan**. Flat statements of fact. The comedy, if any, is in what she doesn't say |
+| nebula | eccentric, delighted, tangential — enthusiasm is her register |
+| echo | quick, young, playful, a little slick |
+| iris | bright, warm, articulate — clever rather than jokey |
+| atlas | blunt, gruff, minimal. Doesn't do jokes. Reports and moves on |
+| meridian | dry, smug, lawyerly — deadpan understatement, indifferent to approval |
+
+No unit borrows another's register. **A drone that makes a generic robot joke is
+off-character.** Applies to say.sh lines, review reports, and any written voice.
