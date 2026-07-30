@@ -1,4 +1,4 @@
-# Pulsar drone factory style — Rev 4 (hardened + pilot-corrected + build-corrected)
+# Pulsar drone factory style — Rev 5 (machined faces, generated frames)
 
 **Reference master: `design/drones/voyager.png`.** Justin's ruling (2026-07-30):
 *"Voyager is still the best one and should be the reference. They should look like
@@ -18,11 +18,26 @@ gear, silhouette and props. Only the *finish* changes.
 
 ## A. INVARIANT — identical across the whole cast (this is "one factory")
 
-1. **The face is a CONVEX SMOKED-GLASS LENS, not a flat screen.** Voyager's
-   faceplate is curved glass with the eyes and mouth as apertures *behind* it,
-   carrying their own surface reflection. Eight of nine siblings currently use a
-   flat black panel with drawn vector glyphs — **this single difference is most of
-   the "different factory" read.** Highest-priority rule in the document.
+1. **THE FACE IS FULLY MACHINED METAL — not a screen, and NOT a glass lens.**
+   *(Justin's ruling, 2026-07-30, reversing Rev 1-4's highest-priority rule. The
+   glass-dome direction produced faces he judged "too cartoony and silly... like
+   they are TV screens for faces". Rev 4's §A1 was wrong and is retired.)*
+   The face is built the way the body is built: machined plates, panel seams,
+   chamfers, fasteners. Features are PHYSICAL MECHANISMS, not graphics:
+   - **Eyes = mechanical camera-iris assemblies.** A turned metal bezel, visible
+     aperture blades or a stepped iris ring, a real glass objective element set
+     deep in the housing, lit from within. They should look like something that
+     could physically focus. NOT a glowing outline, NOT a cartoon eye with a
+     highlight dot, NOT an eye drawn on a panel.
+   - **Mouth = a real machined aperture** — a speaker grille, a louvred vent, or
+     articulated jaw plates. Machined depth, interior structure, actual edges you
+     could catch a fingernail on. Backlighting is allowed; the *shape* must be
+     mechanical.
+   - **No black display panel of any kind**, no smoked dome, no faceplate the
+     features are drawn onto. If you can describe the face as "a screen", it fails.
+   **HIGH-IMPACT AND ROBOTIC is the target register.** Serious machinery, not a
+   toy. Voyager remains the reference for MATERIALS and LIGHT; his face is the
+   one part of him this rule supersedes.
 2. **Chassis material: matte, brushed, light-absorbing metal** with visible panel
    seams and fasteners. Never glossy plastic, mirror chrome, or flat vector
    shading. (Value + finish are invariant; *hue* is not — see B4.)
@@ -31,13 +46,16 @@ gear, silhouette and props. Only the *finish* changes.
    **≥6 discrete physical parts**, at **45-70% saturation**; true emissive glow is
    limited to **≤5 sites** (eyes, mouth, chest sigil, and at most two others),
    sharing the metal's hue. No continuous 100%-saturation light strips.
-4. **Eyes: round lit rings, dark pupil, single white catchlight**, read through the
-   lens. Eye glow = the registry hex at **full saturation** — this is the PRIMARY
-   identity signal at thumbnail size (Atlas's ruling) and must never be muted for
-   the sake of material realism.
-5. **A real mouth with interior depth** — a lit aperture in a material face.
-   *Adjudication:* Sentinel currently has no mouth. He gets one; the cast reads as
-   one product line only if every unit has the same feature set.
+4. **Eyes: MECHANICAL iris assemblies that read at 52px.** Machined bezel +
+   aperture structure + a deep glass element, backlit in the registry hex at full
+   saturation. The COLOUR is the primary thumbnail identity signal (Atlas's ruling)
+   and must stay brilliant — but it is emitted from inside a mechanism, not painted
+   on as a ring. No cartoon catchlight dot; a real specular on real glass instead.
+5. **Mouth: a MACHINED aperture with real interior structure** — grille bars, vent
+   louvres, or jaw plates, with visible depth and side walls, backlit from within.
+   It must be plainly readable at 52px AND it must be a mechanism that could
+   plausibly OPEN — because the lip-sync frames depend on it moving (§E4).
+   *Adjudication:* Sentinel gains a mouth; every unit has the same feature set.
 6. **At least one non-metal material** per drone — textile, leather, webbing,
    rubber. Voyager's scarf and straps are why he reads as built rather than
    rendered; no sibling currently has any.
@@ -121,14 +139,34 @@ renders. Do not proceed past Sentinel without a pass.
 must be judged side by side) → only then composite frames. Compositing an
 unapproved master is the wasted work.
 
-**E4. Frames: composite, never re-generate.** Codex cannot produce a 6:1 strip — it
-falls back to six independent 1:1 renders with per-cell **scale** drift, and phase
-correlation corrects translation but *not* scale, so the drift survives alignment
-and ships as the jagged blink. Instead: resize the approved master once to 362×362
-as `base`; every frame is `base` plus one local patch (mouth bbox for 1–4, eye band
-for blink). Drift becomes structurally impossible. Verified on Atlas today: frames
-1–4 differ from frame 0 in 0.46–1.08% of pixels, blink in 4.74%, rest bit-identical.
-Assert numpy-diff-zero *outside* each declared bbox instead of phase-correlating.
+**E4. Frames: GENERATE a sheet, crop, then ECC-align. Do NOT composite.**
+*(Justin's ruling, 2026-07-30, reversing Rev 4's method.)* Measured proof: the
+ORIGINAL shipped frames changed **6.19% / 26.45% / 12.38%** of the image
+(mouth-2 / mouth-4 / blink vs mouth-0) across a bbox spanning the WHOLE face —
+because each frame is a genuine re-render in which the jaw moves and the light
+reacts. Rev 4's composite frames changed **1.4-3.2%** inside a small box, which
+Justin correctly identified as "the mouths don't actually move, there is just a
+coloured overlay moving" — an 8x regression in real movement. Drift-free and dead
+is worse than slightly-drifty and alive.
+
+The method that works, from the original playbook:
+1. Generate a **6-cell sprite sheet** per drone via codex-imagegen from the
+   approved master: one wide strip, 6 equal SQUARE cells, mouth closed → slight →
+   half → more → WIDE OPEN → blink(eyes closed, mouth closed). Every cell a full
+   re-render of the face; head position/size/framing/lighting held constant.
+2. Crop at `width/6`.
+3. **ECC-align with cv2** (`cv2.findTransformECC`, MOTION_EUCLIDEAN or
+   MOTION_AFFINE, warping each frame onto frame 0). This is the step that makes
+   generated frames usable — it corrects the translation AND scale drift that
+   phase correlation cannot. cv2 4.13 is available on this machine. Aligned frames
+   are the source of truth; **never re-crop from the sheet afterwards**.
+4. If codex refuses a 6:1 strip and returns independent 1:1 renders, that is
+   acceptable *provided* ECC alignment brings them into register — verify by
+   measuring residual offset and the changed-pixel bbox. Reject any set whose
+   frames differ by less than ~4% (that means the mouth isn't really moving) or
+   whose head visibly shifts after alignment.
+5. Sanity gate per drone: mouth-4 vs mouth-0 changed pixels **≥ 8%**, blink vs
+   mouth-0 **≥ 5%**, and no visible head jump when the frames are flipped through.
 
 **E5. Accent-glyph removal, generalised to any colour.** Plate `P` = median of the
 pixel ring just outside the target bbox (inherits that drone's own visor gradient).
