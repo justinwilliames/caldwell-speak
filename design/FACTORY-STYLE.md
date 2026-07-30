@@ -1,4 +1,4 @@
-# Pulsar drone factory style — Rev 5 (machined faces, generated frames)
+# Pulsar drone factory style — Rev 7 (machined faces w/ pupils, articulated mouths)
 
 **Reference master: `design/drones/voyager.png`.** Justin's ruling (2026-07-30):
 *"Voyager is still the best one and should be the reference. They should look like
@@ -46,15 +46,32 @@ gear, silhouette and props. Only the *finish* changes.
    **≥6 discrete physical parts**, at **45-70% saturation**; true emissive glow is
    limited to **≤5 sites** (eyes, mouth, chest sigil, and at most two others),
    sharing the metal's hue. No continuous 100%-saturation light strips.
-4. **Eyes: MECHANICAL iris assemblies that read at 52px.** Machined bezel +
-   aperture structure + a deep glass element, backlit in the registry hex at full
-   saturation. The COLOUR is the primary thumbnail identity signal (Atlas's ruling)
-   and must stay brilliant — but it is emitted from inside a mechanism, not painted
-   on as a ring. No cartoon catchlight dot; a real specular on real glass instead.
-5. **Mouth: a MACHINED aperture with real interior structure** — grille bars, vent
-   louvres, or jaw plates, with visible depth and side walls, backlit from within.
-   It must be plainly readable at 52px AND it must be a mechanism that could
-   plausibly OPEN — because the lip-sync frames depend on it moving (§E4).
+4. **Eyes: MECHANICAL iris assemblies WITH A REAL PUPIL.** *(Justin's ruling,
+   2026-07-30: "their eyes feel soulless without some form of pupil.")* A camera
+   iris HAS a dark central aperture — so a pupil is more mechanically honest, not
+   less. Build, outside in: turned metal bezel → anodised registry-colour ring →
+   overlapping aperture blades → a lit annulus of registry-hex glass at full
+   saturation → **a distinct DARK CENTRAL PUPIL: the actual aperture hole, reading
+   deep and black, with the barrel interior visible in it.** The pupil is what gives
+   the face a gaze; without it the eye reads as a lamp, not an eye. One real
+   specular on the glass surface (upper-right); a specular on glass is not a cartoon
+   catchlight dot. The lit annulus carries thumbnail identity (Atlas's ruling), the
+   pupil carries the soul, and both are physical parts of the same mechanism.
+5. **Mouth: an ARTICULATED MECHANISM THAT ACTUALLY OPENS — not a grille.**
+   *(Justin's ruling, 2026-07-30: "the mouths need to be able to move mechanically
+   from closed to open — so I'm not sure a grille is the right approach.")* A fixed
+   grille of bars CANNOT open; the lip-sync frames need a mouth whose closed and
+   wide-open states are visibly different hardware positions. Build it as one of:
+   - **Articulated jaw plates** — an upper and lower machined plate meeting on a
+     parting line, hinged on visible pivot pins, that separate to reveal a lit
+     interior cavity. Closed = a tight seam with the pivots showing. Open = the
+     plates swung apart, cavity and interior side walls exposed.
+   - **A segmented iris shutter** — overlapping wedge plates that retract outward
+     from the centre, the way a camera shutter opens.
+   Either way: **frame 0 must read as CLOSED (a seam or a shut shutter, minimal
+   light) and frame 4 as WIDE OPEN (plates clearly apart, cavity lit and deep).**
+   The mechanism must be legible enough that a viewer understands how it moves.
+   Interior is backlit so the open states read at 52px.
    *Adjudication:* Sentinel gains a mouth; every unit has the same feature set.
 6. **At least one non-metal material** per drone — textile, leather, webbing,
    rubber. Voyager's scarf and straps are why he reads as built rather than
@@ -195,6 +212,13 @@ The method that works, from the original playbook:
    whose head visibly shifts after alignment.
 5. Sanity gate per drone: mouth-4 vs mouth-0 changed pixels **≥ 8%**, blink vs
    mouth-0 **≥ 5%**, and no visible head jump when the frames are flipped through.
+6. **The mouth must MOVE, not just brighten.** Because §A5 is now an articulated
+   mechanism, frame 0 is CLOSED (plates together, seam visible, little or no
+   interior light) and frame 4 is WIDE OPEN (plates apart, cavity deep and lit).
+   Reject any set where the aperture outline is constant and only the fill changes —
+   that is the Rev 4 "coloured overlay" failure wearing a machined costume.
+   Likewise the BLINK frame must show the aperture BLADES closing over the pupil,
+   not the whole eye switching off.
 
 **E5. Accent-glyph removal, generalised to any colour.** Plate `P` = median of the
 pixel ring just outside the target bbox (inherits that drone's own visor gradient).
