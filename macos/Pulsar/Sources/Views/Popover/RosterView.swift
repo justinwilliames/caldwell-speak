@@ -59,6 +59,19 @@ struct RosterView: View {
                 ForEach(cast) { member in
                     row(member)
                 }
+
+                // The cast is fictional, and the app says so where the faces are.
+                // Nine named characters with distinct voices and portraits shipped
+                // with no notice anywhere in the UI until 2026-07-30 — the repo
+                // carried the disclaimer, the product didn't.
+                Text("These characters are invented — names, voices and faces given "
+                     + "to sub-agents so you can tell the work apart. None is a real "
+                     + "person, and nothing said in a drone's voice is anyone's real view.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 4)
+                    .padding(.top, 6)
             }
             .padding(16)
         }

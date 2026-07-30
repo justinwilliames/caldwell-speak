@@ -70,6 +70,82 @@ func extractEnvelope(url: URL, chunkMs: Int) -> [Float] {
     return envelope.map { min($0 / p95, 1.0) }
 }
 
+/// How long we wait for an `afinfo` probe before giving up on it. A duration is
+/// a nice-to-have (the envelope already carries the effective end), so a wedged
+/// probe must never hold a line hostage.
+private let audioDurationTimeoutSeconds: Double = 5.0
+
+/// Read a file's audio duration via `afinfo` WITHOUT blocking the caller.
+///
+/// DO NOT MAKE THIS SYNCHRONOUS AGAIN. The original was a plain
+/// `proc.waitUntilExit()` called actor-isolated from `playEntry`, so EVERY line
+/// parked the AudioQueueActor's executor for the length of an `afinfo` spawn —
+/// `/speak`, `/queue`, `muteNow` and the drone sweep all queued behind a
+/// subprocess. That is the same blocking-syscall-on-a-cooperative-thread
+/// pathology documented at the `afplay` call site below as the root cause of the
+/// old "stops after 2 lines" stall, reintroduced in miniature (Sentinel C1 #4).
+///
+/// The wait mirrors that call site: resume a continuation from the process's
+/// `terminationHandler` (fired by Foundation on its own thread), never from a
+/// blocking wait, and read the pipe once the child is gone. `afinfo` prints a
+/// dozen short lines — orders of magnitude under the 64 KB pipe buffer — so it
+/// cannot deadlock waiting for us to drain it; the watchdog covers the
+/// pathological case regardless. File-scope (not an actor method) so the
+/// isolation is unambiguous: this touches no actor state, like `extractEnvelope`.
+private func audioDuration(url: URL) async -> Double? {
+    let proc = Process()
+    proc.executableURL = URL(fileURLWithPath: "/usr/bin/afinfo")
+    proc.arguments = [url.path]
+    let pipe = Pipe()
+    proc.standardOutput = pipe
+    proc.standardError  = Pipe()
+
+    let box = ContinuationBox()
+    var watchdog: Task<Void, Never>?
+    do {
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            box.cont = cont
+            proc.terminationHandler = { _ in box.resume() }
+            do {
+                try proc.run()
+            } catch {
+                proc.terminationHandler = nil
+                box.resume(throwing: error)
+                return
+            }
+            // Watchdog: terminating a hung probe resumes us through the same
+            // handler, so the caller can never park here indefinitely. Cancelled
+            // the moment the probe exits normally — an uncancelled timer would
+            // otherwise hold this Process alive for 5s past every single line.
+            watchdog = Task {
+                try? await Task.sleep(nanoseconds: UInt64(audioDurationTimeoutSeconds * 1_000_000_000))
+                guard !Task.isCancelled else { return }
+                if proc.isRunning { proc.terminate() }
+            }
+        }
+    } catch {
+        watchdog?.cancel()
+        return nil
+    }
+    watchdog?.cancel()
+
+    let output = String(
+        data: pipe.fileHandleForReading.readDataToEndOfFile(),
+        encoding: .utf8
+    ) ?? ""
+    // afinfo prints e.g. "estimated duration: 1.234 sec"
+    for line in output.components(separatedBy: "\n") {
+        let lower = line.lowercased()
+        if lower.contains("duration") {
+            let tokens = line.components(separatedBy: " ")
+            for token in tokens {
+                if let d = Double(token), d > 0 { return d }
+            }
+        }
+    }
+    return nil
+}
+
 private func jsonString(_ dict: [String: Any]) -> String {
     guard let data = try? JSONSerialization.data(withJSONObject: dict),
           let s = String(data: data, encoding: .utf8) else { return "{}" }
@@ -636,6 +712,13 @@ actor AudioQueueActor {
         lastDrainProgressAt = Date().addingTimeInterval(-seconds)
     }
 
+    /// Seconds since playback last made progress. Lets a test assert that
+    /// `resumeAfterUnmute` re-stamps the marker — the guard that stops a long
+    /// mute's own purge from deleting the lines the resume just re-armed.
+    func _test_drainProgressAge() -> TimeInterval {
+        Date().timeIntervalSince(lastDrainProgressAt)
+    }
+
     /// Test seam: the exact enqueue insertion + purge path WITHOUT starting the
     /// playback worker (ordering asserts must not race a consuming worker).
     /// Preserves the entry's `enqueuedAt` so purge-ceiling tests can age entries.
@@ -646,6 +729,15 @@ actor AudioQueueActor {
 
     /// Whether an id is currently marked pending-removal (deferred).
     func _test_isPending(id: String) -> Bool { pendingRemoval.contains(id) }
+
+    /// Test seam: drive `playEntry`'s entry-mute gate on an ALREADY-DEQUEUED
+    /// line — the case a mute during the fetch wait produces. Muted, the gate
+    /// re-inserts and returns before any process is spawned; the guard makes an
+    /// accidental unmuted call an inert no-op rather than a live `say`.
+    func _test_playEntryWhileMuted(_ entry: AudioEntry) async {
+        guard PulsarConfig.shared.isMuted else { return }
+        await playEntry(entry)
+    }
 
     /// Point the drone persistence store at a test-owned URL (actor-isolated set).
     func setDronesStoreOverride(_ url: URL?) { dronesStoreOverrideURL = url }
@@ -926,7 +1018,14 @@ actor AudioQueueActor {
             queued: queue.count,
             total: items.count,
             items: items,
-            paused: false,
+            // A muted daemon is PAUSED, not idle and not wedged: the worker has
+            // parked and its waiters are held for unmute. Hardcoding false made
+            // `playing:false, queued:9, paused:false` — indistinguishable from a
+            // wedge, so no client (or hook) could tell "busy" from "paused"
+            // (Sentinel C1 #6). `channel_paused` stays empty: there is no
+            // per-channel pause, and inventing one would be a lie of a
+            // different shape.
+            paused: PulsarConfig.shared.isMuted,
             channelPaused: [],
             recentHistory: recentHistory
         )
@@ -1129,26 +1228,37 @@ actor AudioQueueActor {
         currentProcess = nil
     }
 
+    /// Mute-gate for a line that is already OUT of the queue: hold it instead of
+    /// destroying it. Returns true when the entry was held and the caller must
+    /// stop.
+    ///
+    /// A line reaches `playEntry` having been dequeued — commonly after sitting
+    /// in the up-to-30s fetch wait. The old gate DROPPED it (unlinked its AIFF,
+    /// no history, no trace), which contradicts the mute-is-pause contract
+    /// `muteNow` promises for every OTHER queued line: an unlucky line whose
+    /// mute landed inside its own fetch window died while its neighbours were
+    /// held (Sentinel C1 #5). Re-inserting at the HEAD is the pause: it was next
+    /// to play, so it plays first on unmute, with its resolved audio intact (no
+    /// second synthesis). The worker's own pause gate parks on the next
+    /// iteration and `resumeAfterUnmute()` re-arms it.
+    ///
+    /// `enqueuedAt` is deliberately NOT re-stamped — a mute long enough to blow
+    /// the staleness window must still self-clear via the progress-gated purge
+    /// rather than replay a stale backlog after lunch (see `muteNow`).
+    private func holdIfMuted(_ entry: AudioEntry, stage: String) -> Bool {
+        guard PulsarConfig.shared.isMuted else { return false }
+        queue.insert(entry, at: 0)
+        NSLog("[AudioQueue] ⏸ \(stage) \(entry.id) HELD for unmute — muted, \(queue.count) line(s) waiting")
+        return true
+    }
+
     private func playEntry(_ entry: AudioEntry) async {
         // Mute-gate: a line can reach here AFTER the user muted (it was already
         // dequeued / mid-resolve when the mute landed, so it never hit the
-        // upstream /speak enqueue guard). Muting is an immediate, real mute — so
-        // drop this line silently rather than play into a muted session. `muteNow`
-        // handles the ONE line that was already sounding through afplay; this
-        // guard handles the next-in-line that the killed worker would otherwise
-        // advance to.
-        guard !PulsarConfig.shared.isMuted else {
-            NSLog("[AudioQueue] 🔇 playEntry \(entry.id) suppressed — muted")
-            // Unlink a temp AIFF this entry produced so a muted drop doesn't leak.
-            if let url = entry.audioURL {
-                let tmpDir = URL(fileURLWithPath: NSTemporaryDirectory()).standardized.path
-                if url.standardized.path.hasPrefix(tmpDir) {
-                    try? FileManager.default.removeItem(at: url)
-                }
-            }
-            await broadcastIdleIfQueueEmpty()
-            return
-        }
+        // upstream /speak enqueue guard). `muteNow` handles the ONE line that was
+        // already sounding through afplay; this guard handles the next-in-line
+        // that the paused worker would otherwise advance to — held, not dropped.
+        if holdIfMuted(entry, stage: "playEntry") { return }
 
         guard !entry.fetchFailed, let audioURL = entry.audioURL else {
             // ElevenLabs synthesis was unavailable (missing/invalid key,
@@ -1168,9 +1278,14 @@ actor AudioQueueActor {
             return
         }
 
-        let fileDuration = audioDuration(url: audioURL)
+        let fileDuration = await audioDuration(url: audioURL)
         let chunkMs = 50
         let envelope = await Task.detached { extractEnvelope(url: audioURL, chunkMs: chunkMs) }.value
+        // The two probes above are the only awaits between the entry-mute gate
+        // and `afplay`, so they are also the only window in which a mute can
+        // land on a line that has already passed that gate. Re-check, and hold —
+        // otherwise a mute during the probes plays a line into a muted session.
+        if holdIfMuted(entry, stage: "pre-afplay") { return }
         // Compute where speech actually ends so we can kill afplay before it
         // plays through ElevenLabs' trailing silence. Falls back to fileDuration
         // when the envelope is unusable.
@@ -1389,33 +1504,5 @@ actor AudioQueueActor {
     private func deleteHistoryAudio(id: String) {
         let url = PulsarConfig.shared.historyAudioDir.appendingPathComponent("\(id).mp3")
         try? FileManager.default.removeItem(at: url)
-    }
-
-    /// Synchronously reads audio duration via `afinfo`. Runs on the calling
-    /// context — call from a non-actor thread or wrap in Task.detached if needed.
-    private func audioDuration(url: URL) -> Double? {
-        let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: "/usr/bin/afinfo")
-        proc.arguments = [url.path]
-        let pipe = Pipe()
-        proc.standardOutput = pipe
-        proc.standardError  = Pipe()
-        guard (try? proc.run()) != nil else { return nil }
-        proc.waitUntilExit()
-        let output = String(
-            data: pipe.fileHandleForReading.readDataToEndOfFile(),
-            encoding: .utf8
-        ) ?? ""
-        // afinfo prints e.g. "estimated duration: 1.234 sec"
-        for line in output.components(separatedBy: "\n") {
-            let lower = line.lowercased()
-            if lower.contains("duration") {
-                let tokens = line.components(separatedBy: " ")
-                for token in tokens {
-                    if let d = Double(token), d > 0 { return d }
-                }
-            }
-        }
-        return nil
     }
 }

@@ -203,6 +203,33 @@ struct ClaudeIntegrationInstaller {
                                   to: dest)
                 try fm.setAttributes(execPerms, ofItemAtPath: dest.path)
             }
+
+            // The pulsar-team skill (the 9-drone review team). build-pulsar-app.sh
+            // has staged it into the payload since 2026-07-20, but this installer
+            // never copied it — so every DMG-only user who clicked Setup got voice
+            // and drones while `/pulsar-team` silently did not exist, permanently
+            // (found by adversarial review 2026-07-30). It installs as a SIBLING
+            // skill dir, not under skills/pulsar, because Claude Code discovers
+            // skills one level down from ~/.claude/skills.
+            let teamSrc = payloadDir
+                .appendingPathComponent("skills", isDirectory: true)
+                .appendingPathComponent("pulsar-team", isDirectory: true)
+            if fm.fileExists(atPath: teamSrc.path) {
+                let teamDest = skillDir.deletingLastPathComponent()
+                    .appendingPathComponent("pulsar-team", isDirectory: true)
+                let teamScripts = teamDest.appendingPathComponent("scripts", isDirectory: true)
+                try fm.createDirectory(at: teamScripts, withIntermediateDirectories: true)
+                try copyReplacing(teamSrc.appendingPathComponent("SKILL.md"),
+                                  to: teamDest.appendingPathComponent("SKILL.md"))
+                let srcScripts = teamSrc.appendingPathComponent("scripts", isDirectory: true)
+                if let names = try? fm.contentsOfDirectory(atPath: srcScripts.path) {
+                    for name in names where name.hasSuffix(".sh") {
+                        let dest = teamScripts.appendingPathComponent(name)
+                        try copyReplacing(srcScripts.appendingPathComponent(name), to: dest)
+                        try fm.setAttributes(execPerms, ofItemAtPath: dest.path)
+                    }
+                }
+            }
         } catch let e as InstallError {
             throw e
         } catch {

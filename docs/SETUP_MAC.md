@@ -119,7 +119,7 @@ system output volume and the selected output device apply as normal.
 
 Every line is spoken in a character voice — you don't pick one. Pulsar speaks as
 itself; when Claude Code spawns a sub-agent, that drone speaks in its own voice.
-All seven are standard macOS system voices, so they're already installed:
+All nine are standard macOS system voices, so they're already installed:
 
 | Character | Role | Voice |
 |-----------|------|-------|
@@ -128,8 +128,10 @@ All seven are standard macOS system voices, so they're already installed:
 | Sentinel | Reviewer | Karen (en-AU) |
 | Nova | Builder | Samantha (en-US) |
 | Nebula | Artist | Moira (en-IE) |
-| Echo | Writer | Tessa (en-ZA) |
+| Echo | Writer | Junior (en-US) |
+| Iris | Marketer | Tessa (en-ZA) |
 | Atlas | Generalist | Rishi (en-IN) |
+| Meridian | Counsel | Ralph (en-US) |
 
 If a system voice isn't present, macOS resolves it to the closest installed
 variant. To add more, open **System Settings → Accessibility → Spoken Content →

@@ -68,6 +68,18 @@ enum DaemonAuth {
         directory.appendingPathComponent("speech.jsonl")
     }
 
+    /// The one retained previous generation of the speech log.
+    static var speechLogArchiveFile: URL {
+        directory.appendingPathComponent("speech.jsonl.1")
+    }
+
+    /// Roll the speech log once it passes this size. "Never truncated by the
+    /// app" was true to the letter and unbounded in practice — a durable record
+    /// with no ceiling is a slow disk leak, not a feature (Sentinel C1 #7).
+    /// 5 MB is ~20k records at the observed ~240 bytes/line: months of speech
+    /// retained live, two generations bounded at ~10 MB.
+    static let speechLogMaxBytes: Int = 5 * 1024 * 1024
+
     // MARK: - Token
 
     private static let lock = NSLock()
@@ -227,6 +239,8 @@ enum DaemonAuth {
         speechLogLock.lock()
         defer { speechLogLock.unlock() }
 
+        rotateSpeechLogIfNeeded()
+
         let fm = FileManager.default
         if !fm.fileExists(atPath: speechLogFile.path) {
             try? fm.createDirectory(
@@ -250,6 +264,36 @@ enum DaemonAuth {
             try handle.write(contentsOf: line)
         } catch {
             NSLog("[DaemonAuth] speech.jsonl append failed: \(error)")
+        }
+    }
+
+    /// Size-based rotation: once the live log passes `speechLogMaxBytes`, RENAME
+    /// it to `speech.jsonl.1` (replacing any previous generation) so the next
+    /// append starts a fresh file. Two generations, ~10 MB ceiling.
+    ///
+    /// A rename, never a copy-and-truncate: the move is atomic within the
+    /// directory, so no record is ever half-written or lost, the archived file
+    /// keeps its 0600 mode, and a reader holding the old inode keeps reading it
+    /// safely. Append-only semantics are untouched — this file is still never
+    /// rewritten in place.
+    ///
+    /// MUST be called with `speechLogLock` held (it is, from
+    /// `appendSpeechRecord`) or two writers could rotate the same generation.
+    /// Best-effort like the append itself: a rotation failure logs and lets the
+    /// append proceed rather than dropping a spoken line.
+    private static func rotateSpeechLogIfNeeded() {
+        let fm = FileManager.default
+        guard let attrs = try? fm.attributesOfItem(atPath: speechLogFile.path),
+              let size = attrs[.size] as? Int,
+              size >= speechLogMaxBytes else { return }
+        do {
+            if fm.fileExists(atPath: speechLogArchiveFile.path) {
+                try fm.removeItem(at: speechLogArchiveFile)
+            }
+            try fm.moveItem(at: speechLogFile, to: speechLogArchiveFile)
+            NSLog("[DaemonAuth] rotated speech.jsonl (\(size) bytes) → speech.jsonl.1")
+        } catch {
+            NSLog("[DaemonAuth] speech.jsonl rotation failed: \(error) — appending anyway")
         }
     }
 }

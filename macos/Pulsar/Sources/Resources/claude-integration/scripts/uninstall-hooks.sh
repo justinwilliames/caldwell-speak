@@ -85,8 +85,27 @@ def strip_event(event, target_abs):
         hooks.pop(event, None)
     return removed
 
-removed_start = strip_event("SubagentStart", substart_cmd)
-removed_stop = strip_event("SubagentStop", substop_cmd)
+# FULL reversal, not just the two drone hooks. install-hooks.sh wires SIX; this
+# script removed TWO, so a user reversing by hand was left with voice firing on
+# every turn and no indication the rollback was partial — while the in-app
+# "Remove Pulsar" button removed all six (found by adversarial review
+# 2026-07-30). Statusline is deliberately NOT touched here: it is a separate
+# setting, not a hook, and blanket-clearing it could take a non-Pulsar value.
+script_dir = os.path.dirname(substart_cmd)
+MANAGED = [
+    ("SubagentStart",    "subagent-start.sh"),
+    ("SubagentStop",     "subagent-stop.sh"),
+    ("Stop",             "stop-hook.sh"),
+    ("Stop",             "chime.sh"),
+    ("UserPromptSubmit", "turn-start.sh"),
+    ("SessionStart",     "session-start-voice.sh"),
+]
+results = []
+for event, script in MANAGED:
+    n = strip_event(event, os.path.join(script_dir, script))
+    results.append((event, script, n))
+removed_start = next((n for e, s, n in results if s == "subagent-start.sh"), 0)
+removed_stop = next((n for e, s, n in results if s == "subagent-stop.sh"), 0)
 
 # Drop the hooks key entirely only if it ended up empty.
 if isinstance(data.get("hooks"), dict) and not data["hooks"]:
@@ -96,9 +115,10 @@ with open(settings_path, "w") as f:
     json.dump(data, f, indent=2)
     f.write("\n")
 
-print(f"SubagentStart hook:    {'removed' if removed_start else 'not present'}")
-print(f"SubagentStop hook:     {'removed' if removed_stop else 'not present'}")
-print(f"Settings:              {settings_path}")
+for event, script, n in results:
+    label = f"{event} → {script}"
+    print(f"{label:<44} {'removed' if n else 'not present'}")
+print(f"{'Settings:':<44} {settings_path}")
 PY
 
 echo

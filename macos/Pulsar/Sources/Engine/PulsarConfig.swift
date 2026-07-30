@@ -270,12 +270,16 @@ final class PulsarConfig: @unchecked Sendable {
                 merged.removeValue(forKey: k)
             }
 
-            // (4) Persist via the hardened writer, one key at a time, so the
-            //     read-modify-write stays non-destructive throughout. Writing the
-            //     full merged dict directly is fine too, but going through set()
-            //     keeps a single write path and picks up the Fix-A tolerance.
-            let data = try JSONSerialization.data(withJSONObject: merged, options: .prettyPrinted)
-            try data.write(to: configPath)
+            // (4) Persist the merged dict under the SAME write lock `set()` uses.
+            //     The comment here used to claim this went "via set()" while the
+            //     code did a raw unlocked write — harmless in practice (migration
+            //     runs once at startup, before the daemon serves) but it was a
+            //     second, unguarded write path into the same file, which is
+            //     exactly how lost-update races get reintroduced later.
+            try Self.writeLock.withLock {
+                let data = try JSONSerialization.data(withJSONObject: merged, options: .prettyPrinted)
+                try data.write(to: configPath)
+            }
             reload()
 
             // (5) Sentinel LAST — only on success.

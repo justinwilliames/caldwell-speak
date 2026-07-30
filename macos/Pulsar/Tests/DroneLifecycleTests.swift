@@ -247,6 +247,32 @@ func runAll() async {
         await expect(await actor._test_queueDepth() == 3, "muteNow held all queued lines for unmute")
     }
 
+    // The cycle-1 regression, guarded. resumeAfterUnmute() must re-stamp the
+    // drain-progress marker: a pause makes no progress by definition, so after a
+    // mute longer than the staleness window the purge gate would be wide open and
+    // the re-armed worker's first iteration deleted every held line ("resuming 9
+    // held line(s)" followed immediately by 9 purges). Asserting the STAMP rather
+    // than the drained queue keeps this deterministic — the worker's own
+    // progress-stamping can only make the marker fresher, never staler.
+    await test("resumeAfterUnmute re-stamps drain progress (held lines survive a long mute)") {
+        let (actor, _) = await makeActor()
+        await actor._test_appendQueuedCategory("voyager")
+        await actor._test_appendQueuedCategory("meridian")
+        await actor.muteNow()
+        await expect(await actor._test_queueDepth() == 2, "two lines held through the mute")
+        await actor._test_ageDrainProgress(seconds: 90)
+        await expect(await actor._test_drainProgressAge() > 60, "mute went quiet past the 60s window")
+        await actor.resumeAfterUnmute()
+        await expect(await actor._test_drainProgressAge() < 5, "unmute re-stamped progress — purge gate stays shut")
+    }
+
+    await test("resumeAfterUnmute on an empty queue does NOT stamp (nothing to resume)") {
+        let (actor, _) = await makeActor()
+        await actor._test_ageDrainProgress(seconds: 90)
+        await actor.resumeAfterUnmute()
+        await expect(await actor._test_drainProgressAge() > 60, "empty queue → guard returns early, marker untouched")
+    }
+
     await test("muteNow on an empty queue is a safe no-op") {
         let (actor, _) = await makeActor()
         await expect(await actor._test_queueDepth() == 0, "starts empty")
@@ -423,6 +449,56 @@ func runAll() async {
         await expect(order.contains("old-priority"), "90s priority SURVIVES (180s ceiling)")
         await expect(!order.contains("ancient-priority"), "200s priority purged — no immunity")
         await expect(order.contains("fresh"), "fresh entry queued")
+    }
+
+    // MARK: - Mute is pause for the IN-FLIGHT line too (Sentinel C1 #5, #6)
+    //
+    // The line the worker has already dequeued — typically sitting in the
+    // up-to-30s fetch wait — used to be DROPPED when a mute landed, while every
+    // still-queued sibling was held. These two assert the hold and the honest
+    // `paused` flag that lets a client tell "paused" from "wedged".
+    //
+    // Runs LAST and restores PULSAR_MUTED=0 on the way out: it mutates the
+    // shared PulsarConfig singleton, which every later test would inherit.
+    await test("mute during the fetch wait HOLDS the in-flight line; /queue reports paused") {
+        let cfg = PulsarConfig.shared
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cfg-mute-\(UUID().uuidString)")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        setenv("PULSAR_STORAGE", dir.path, 1)
+        try! JSONSerialization.data(withJSONObject: ["PULSAR_MUTED": "0"])
+            .write(to: cfg.configPath)
+        cfg.reload()
+
+        let (actor, _) = await makeActor()
+        await actor._test_appendQueuedCategory("nova")   // a sibling waiter
+        let inFlight = AudioEntry(
+            id: "in-flight", text: "held line", voiceId: "native", voiceLabel: "Pulsar",
+            createdAt: Date(), channel: nil, priority: false, fullText: "held line",
+            isReplay: false, audioURL: nil, engine: "native", agentCategory: "voyager")
+
+        await expect(await actor.statusSnapshot().paused == false,
+                     "unmuted → /queue reports paused:false")
+
+        try! cfg.set("PULSAR_MUTED", value: "1")
+        await expect(cfg.isMuted, "muted precondition")
+
+        await actor._test_playEntryWhileMuted(inFlight)
+        let ids = await actor._test_queueIds()
+        await expect(ids.contains("in-flight"),
+                     "in-flight line HELD, not dropped (got: \(ids))")
+        await expect(ids.first == "in-flight",
+                     "held at the HEAD — it was next to play (got: \(ids))")
+        await expect(ids.count == 2, "sibling waiter still held too (got: \(ids.count))")
+
+        let snapshot = await actor.statusSnapshot()
+        await expect(snapshot.paused, "muted → /queue reports paused:true, not a wedge")
+        await expect(snapshot.playing == false && snapshot.queued == 2,
+                     "paused shape: playing:false, queued:2")
+
+        try! cfg.set("PULSAR_MUTED", value: "0")
+        unsetenv("PULSAR_STORAGE")
+        cfg.reload()
     }
 }
 
