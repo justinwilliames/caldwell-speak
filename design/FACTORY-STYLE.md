@@ -678,3 +678,45 @@ written voice follow its own register:
 
 No unit borrows another's register. **A drone that makes a generic robot joke is
 off-character.** Applies to say.sh lines, review reports, and any written voice.
+
+## R9.6 — GENDER READ follows the VOICE (Justin, 2026-07-31)
+
+*"The ones that are using female voices, make the robot more feminine-looking and
+those using male voices more masculine. Iris was a great example previously but now
+she looks very androgynous. Nova can be a bit more androgynous by design."*
+
+The Rev 8 machining pass flattened the cast toward androgyny — every unit got the
+same heavy plate language. The voice and the face should agree: you hear Tessa, you
+should be looking at something that reads feminine.
+
+| Unit | Voice | Read |
+|---|---|---|
+| pulsar | Daniel (M) | masculine |
+| voyager | Fred (M) | masculine, heaviest build |
+| sentinel | Karen (F) | **feminine** |
+| nova | Samantha (F) | **deliberately ANDROGYNOUS** — Justin's explicit call, and it suits her new tough/deadpan persona |
+| nebula | Moira (F) | **feminine** |
+| echo | Junior (M, boyish) | masculine, young — the smallest and slightest |
+| iris | Tessa (F) | **feminine — the clearest in the cast.** She was right pre-Rev-8; restore it |
+| atlas | Rishi (M) | masculine, broadest and most utilitarian |
+| meridian | Ralph (M) | masculine, heaviest and most formal |
+
+**HOW — proportion and form language, never anatomy.** The §D bans stand in full:
+no eyelashes, lips, blush, bows, skirts, cinched or hourglass waists, breast-shaped
+chest plating, hip flare, or hair-like cable styling. A robot has no anatomy to
+simulate and simulating it is the cliché that makes this look cheap. The read comes
+from **build**:
+
+- **Feminine:** narrower jaw and chassis taper, a slimmer neck column, smaller
+  shoulder-to-head ratio, more refined and slender plate edges, more curvature and
+  fillet in the forms, lighter overall mass, finer detailing, more elegant
+  proportions. Think a precision instrument rather than a bulldozer.
+- **Masculine:** broader jaw, wider shoulder-to-head ratio, heavier plate, blunter
+  and squarer forms, more mass and visible structure, coarser fasteners.
+- **Androgynous (Nova only):** deliberately mid on every axis — neither taper nor
+  bulk, balanced shoulder ratio, forms that don't commit either way.
+
+**Reference for Iris:** `design/drones/before/iris.png` and
+`design/drones/pre-rev8/iris.png` — she read clearly feminine there through
+proportion and refinement alone. Get that back on top of the Rev 9 machined face,
+without reintroducing a single banned cue.
