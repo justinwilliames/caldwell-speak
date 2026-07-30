@@ -149,8 +149,31 @@ should read WARM in machined terms — that is a spec requirement now, not a nic
 | echo | teal `#2EBFB8` | Junior — light, boyish, newest | 2 / 5 / 0 / 5 | comms dish, boom mic, perforated crown, waveform motif (physical) |
 | iris | coral `#F26178` | Tessa — clear, warm, poised | 3 / 4 / 1 / 4 | halo ring, orbiting channel motes (physical) |
 | atlas | grape `#8040C0` | Rishi — deep, steady, grounded | 4 / 3 / 2 / 3 | twin antennae, UX flow-path chest glyph (3 dots + routed elbow) |
-| meridian | navy `#24427A` | Ralph — deep, slow, senior | 4 / 2 / 2 / 2 | barrister neck bands, gold scales emblem, pinstripes |
+| meridian | navy `#24427A` | Ralph — deep, slow, senior | 4 / 2 / 2 / 2 | **ARMOURED, not suited (Justin, 2026-07-30)** — see note below |
 | pulsar | indigo `#818CF8` | Daniel — authoritative host | 3 / 4 / 1 / 4 | **LAST, conditional.** Master lives at `assets/readme/pulsar.png`, not `design/drones/` |
+
+**Meridian's body — REDESIGN (Justin's ruling, 2026-07-30):** *"I don't like that
+Meridian is in a lawyer suit, can we make it more subtle but still more in armour
+like the rest? I still want him to look cool."* He is the only unit wearing
+clothing rather than armour, which breaks the one-factory read — a robot in a
+pinstripe suit is a costume, and it reads as a gag rather than as the cast's most
+senior member.
+
+- **OUT:** the pinstripe wool suit, the lapels, the visible barrister neck bands as
+  cloth tabs. No tailoring, no suiting fabric, no shirt-and-tie logic.
+- **IN:** heavy machined armour in the house language, same construction as his
+  siblings — layered navy anodised plates, chamfers, fasteners — but the **heaviest
+  and most formal** set in the cast: thicker plates, a higher standing gorget
+  collar, more overlap, a deliberate ceremonial weight. Think honour-guard
+  plating, not office wear.
+- **Authority survives as INSIGNIA, not tailoring.** The gold scales emblem stays
+  as a cast-brass badge. His barrister bands become **two slim vertical white
+  ceramic or enamelled inlay strips** set into the gorget where the cloth tabs
+  were — same visual signature at 52px (they are his strongest thumbnail mark),
+  now a machined part. Optionally one restrained gold pinstripe as an engraved
+  line in the plate, not a woven cloth pattern.
+- Keep him the oldest-reading and gravest unit; formal now comes from the weight
+  and symmetry of the armour, not from a suit.
 
 ## D. NEVER (hard bans)
 
