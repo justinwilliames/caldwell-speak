@@ -44,8 +44,9 @@ gear, silhouette and props. Only the *finish* changes.
 3. **Accent colour is PHYSICAL METAL, not neon tape.** Anodised/enamelled trim
    panels, rings and bezels catching real light. Quantified: accent occupies
    **≥6 discrete physical parts**, at **45-70% saturation**; true emissive glow is
-   limited to **≤5 sites** (eyes, mouth, chest sigil, and at most two others),
-   sharing the metal's hue. No continuous 100%-saturation light strips.
+   allowed on **up to 8-10 sites** (raised from ≤5 by §R9.7 — the cast was reading
+   dull and under-powered). No continuous 100%-saturation light strips tracing
+   every panel edge, and no glowing bars on the face beyond the eyes and mouth.
 4. **Eyes: MECHANICAL iris assemblies WITH A REAL PUPIL.** *(Justin's ruling,
    2026-07-30: "their eyes feel soulless without some form of pupil.")* A camera
    iris HAS a dark central aperture — so a pupil is more mechanically honest, not
@@ -720,3 +721,44 @@ from **build**:
 `design/drones/pre-rev8/iris.png` — she read clearly feminine there through
 proportion and refinement alone. Get that back on top of the Rev 9 machined face,
 without reintroducing a single banned cue.
+
+## R9.7 — MORE GLOW. The cast is reading dull. (Justin, 2026-07-31)
+
+*"Make sure that more of their accents glow more — e.g. Iris' halo should glow —
+their images look a bit dull in the last version. More glowing accents making them
+feel more powerful."*
+
+Rev 8's §A3 capped emissive sites at ≤5 to stop the "neon tape on grey plastic"
+failure. That cap has over-corrected: the cast now reads under-powered, and the
+machined-metal pass made it worse by turning former glow into dull anodising.
+
+**The cap is RAISED and the emphasis inverted.** Accent metal still must not be
+neon tape — but these are powered machines and they should look it.
+
+- **Emissive sites: up to 8-10 per unit** (was ≤5). Eyes, mouth seam, chest core,
+  plus the unit's signature lit elements.
+- **Each unit's SIGNATURE element must genuinely GLOW**, brightly, with visible
+  bloom and light spilling onto the surrounding metal:
+  | Unit | Signature that must glow |
+  |---|---|
+  | pulsar | four-point star chest core + crest edge |
+  | voyager | forehead lamp (a real lamp — it should light the plate around it) |
+  | sentinel | scanner optic element + tick badge |
+  | nova | fusion core — the brightest in the cast, it is her whole identity |
+  | nebula | prismatic visor edge + brush ferrule + the four-petal core |
+  | echo | dish feed horn + waveform plate edges |
+  | iris | **THE HALO — luminous, blooming, the angelic cue.** Justin named it |
+  | atlas | antenna beads + flow-path glyph |
+  | meridian | chest core + gorget lap recesses (his §R9.4 glow-up) |
+- **Light must AFFECT the scene:** bloom around the source, coloured spill onto
+  adjacent plates, visible falloff, a soft rim where the glow catches an edge. A
+  bright shape with no spill is a sticker, not a light.
+- **Recessed lit seams** in panel gaps are encouraged — they read as internal power
+  without becoming surface neon.
+- Still banned: continuous 100%-saturation light strips tracing every panel edge,
+  and glowing bars on the face beyond the eyes and mouth interior (§D).
+
+**The pilot's load-bearing finding, related:** at 52px a small mouth SURVIVES only
+because of the lit hairline in its seam. Pulsar's unlit-seam attempt vanished
+entirely at thumbnail size; the lit version reads. **Every unit's mouth seam gets a
+fine lit hairline in its accent hue** — this is now mandatory, not optional.
