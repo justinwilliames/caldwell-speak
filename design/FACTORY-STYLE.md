@@ -758,6 +758,12 @@ neon tape — but these are powered machines and they should look it.
 - Still banned: continuous 100%-saturation light strips tracing every panel edge,
   and glowing bars on the face beyond the eyes and mouth interior (§D).
 
+**EVERY unit, not just Iris (Justin, 2026-07-31):** *"Not just Iris — make sure they
+all glow somewhat and it makes them look powered up and powerful."* The signature
+table above is a MINIMUM per unit, not a list of exceptions. No unit ships reading
+dull. Iris's approved v4 is the reference level for how much glow is right — match
+it across the cast.
+
 **The pilot's load-bearing finding, related:** at 52px a small mouth SURVIVES only
 because of the lit hairline in its seam. Pulsar's unlit-seam attempt vanished
 entirely at thumbnail size; the lit version reads. **Every unit's mouth seam gets a
