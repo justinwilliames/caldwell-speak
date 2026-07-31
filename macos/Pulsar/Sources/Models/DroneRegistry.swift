@@ -35,7 +35,7 @@ enum DroneRegistry {
         let color: Color
         let voice: String
         /// Single-character role badge shown in the portrait corner (E=explorer,
-        /// R=reviewer, B=builder, A=artist, W=writer, G=generalist, M=marketer,
+        /// R=reviewer/analyst, B=builder, A=artist, W=writer, G=generalist, M=marketer,
         /// L=counsel).
         let badge: String
         let motion: MotionTrait
@@ -89,7 +89,7 @@ enum DroneRegistry {
     static let drones: [Drone] = [
         Drone(category: "voyager",  role: "explorer",   color: Color(red: 0.95, green: 0.66, blue: 0.23), voice: "Fred",     badge: "E",
               motion: MotionTrait(bobAmplitude: 3.4, bobFrequency: 1.35, activeScale: 2.5)),  // amber — restless, wide, fast
-        Drone(category: "sentinel", role: "reviewer",   color: Color(red: 0.42, green: 0.72, blue: 0.92), voice: "Karen",    badge: "R",
+        Drone(category: "sentinel", role: "analyst",    color: Color(red: 0.42, green: 0.72, blue: 0.92), voice: "Karen",    badge: "R",
               motion: MotionTrait(bobAmplitude: 0.8, bobFrequency: 0.6,  activeScale: 2.3)),  // azure — still, minimal
         Drone(category: "nova",     role: "builder",    color: Color(red: 0.36, green: 0.82, blue: 0.42), voice: "Samantha", badge: "B",
               motion: MotionTrait(bobAmplitude: 2.6, bobFrequency: 1.6,  activeScale: 2.45)), // green — busy, bouncy

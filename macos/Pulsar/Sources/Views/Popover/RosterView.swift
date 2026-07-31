@@ -26,7 +26,7 @@ struct RosterView: View {
         ]
         let blurbs: [String: String] = [
             "voyager":  "Scouts the codebase — searches, explores, and reports back what it finds.",
-            "sentinel": "Reviews the work — audits, critiques, and catches bugs and security issues.",
+            "sentinel": "Reviews and analyses — audits, critiques, catches bugs and security issues, and checks whether the numbers actually say what they claim.",
             "nova":     "Builds it — implements features, refactors, and gets the code compiling.",
             "nebula":   "Makes it beautiful — design, images, icons, and visual polish.",
             "echo":     "Writes it up — docs, changelogs, copy, and clear prose.",

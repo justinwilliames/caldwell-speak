@@ -120,6 +120,7 @@ CAST = "voyager|sentinel|nova|nebula|echo|iris|atlas|meridian"
 TYPE_MAP = {
     "explore": "voyager", "explorer": "voyager",
     "review": "sentinel", "reviewer": "sentinel", "security-review": "sentinel",
+    "analyst": "sentinel", "analysis": "sentinel", "analytics": "sentinel",
     "build": "nova", "builder": "nova", "general-purpose": "atlas",
     "artist": "nebula", "design": "nebula", "designer": "nebula",
     "write": "nebula", "writer": "nebula", "scribe": "nebula",
@@ -156,7 +157,9 @@ KEYWORDS = [
       "sem ", "marketing", "retention", "winback", "win-back", "activation",
       "segment", "utm", "cac", "ltv", "attribution", "crm", "hubspot"), "iris"),
     (("explore", "search", "find", "investigat", "locate", "research"), "voyager"),
-    (("review", "audit", "critique", "security", "vulnerab", "lint"), "sentinel"),
+    (("review", "audit", "critique", "security", "vulnerab", "lint",
+      "analys", "analytic", "metric", "cohort", "funnel", "significance",
+      "denominator", "sample size", "reconcile the number"), "sentinel"),
     (("build", "implement", "refactor", "compile", "code", "fix"), "nova"),
     (("design", "art", "image", "icon", "visual", "illustrat", "logo"), "nebula"),
     (("write", "draft", "copy", "doc", "changelog", "prose", "blog", "content"), "nebula"),
