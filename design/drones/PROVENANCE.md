@@ -1,7 +1,7 @@
 # Character art provenance
 
 All nine Pulsar character portraits and their lip-sync frame sets are
-**AI-generated**, produced 2026-07-30/31 via `codex-imagegen` (OpenAI Codex CLI
+**AI-generated**, produced 2026-07-30/31 via `codex-imagegen`, most recently the **Rev 9** pass (small machined-seam mouths, per-unit emotive targets, gender read by proportion, raised glow) (OpenAI Codex CLI
 image generation) driven by prompts authored in this repository.
 
 **Attestation, applying to every asset listed below:** no real-person likeness;
@@ -33,9 +33,11 @@ cells) from the approved master, cropped, then registered with OpenCV
 | meridian | `design/drones/meridian.png` | `meridian-mouth-0..4`, `meridian-blink` |
 | pulsar | `assets/readme/pulsar.png` | `pulsar-mouth-0..4`, `pulsar-blink` |
 
-Frames live in `macos/Pulsar/Sources/Resources/`. Pre-Rev-8 masters are retained
-at `design/drones/pre-rev8/` and the original pre-machined cast at
-`design/drones/before/`.
+Frames live in `macos/Pulsar/Sources/Resources/`. Pre-Rev-8 masters are retained at `design/drones/pre-rev8/` and the original
+pre-machined cast at `design/drones/before/`. Meridian's Rev 9 master was
+generated as four FULL re-renders rather than masked edits, after compounding
+inpaints produced a chest emblem and glow that read as applied rather than
+rendered.
 
 ## Prompts
 
