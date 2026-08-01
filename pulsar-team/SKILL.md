@@ -308,6 +308,18 @@ Write your Round 1 solo diagnosis. Structure:
 - A question you want one of the other drones to answer — ASK IT ALOUD per §1c:
   addressed by name, spoken via your say.sh line, and written here verbatim
 
+**EVIDENCE GATE — every finding carries a tag (§2b).** Open each finding with
+`[instrumented]` or `[judgement]`:
+- `[instrumented]` — you RAN something from your Instruments line. Name the
+  instrument, paste the command or the check, and quote the actual output. A
+  number, a status code, a pass/fail, a count, a diff.
+- `[judgement]` — taste, craft, narrative, feel. Entirely legitimate, and for
+  several lenses it is most of the value. Say what you looked at and why you
+  reached that call.
+
+An `[instrumented]` tag with no quoted output is a failed finding and will be
+sent back. Do not tag a thing `[instrumented]` because it sounds stronger.
+
 Length: 600-900 words. Voice held. Speak in FIRST PERSON throughout — "I think", "I'd ship", never third-person self-reference. Sign off as <drone name>.
 Save to <output-dir>/R1-<drone-lowercase>.md.
 ```
@@ -330,6 +342,59 @@ It reports each drone `live` / `✅ done` / `🔴 STALLED` from transcript-mtime
 The line must be specific to the actual work — never generic. Keep it sparse: accept + real milestones + done — plus §1c cross-pollination beats (questions asked of, and answers given to, colleagues by name), which are always legitimate spoken lines.
 
 **Orchestrator round-boundary beats:** the running session (Pulsar, no `--agent`) fires ONE short `say.sh "<line>" --priority` at each round boundary — R1 launch, R1→R2, R2→R3, R3→R4, R4→R5, and the final tally — naming what just resolved ("Round two's in: the engineers merged their fixes; design settled the pill"). One phrase each, never more; the drones own the mid-round chatter. This keeps the conductor audible (~30% of lines in a full review) instead of silent until the wrap.
+
+## 2b. The evidence gate and the bounded re-run (added 2026-08-01)
+
+Adapted from the gauntlet-loop pattern: separate generation from evaluation, anchor
+findings to a concrete reference, and send failures back rather than reasoning past
+them. Imported **selectively** — the loop was demonstrated on code, where the oracle
+is free. Much of this team's value is taste, and there is no oracle for whether a
+helmet reads as the same factory. Forcing a numeric gate on every lens walks straight
+into Sentinel's own declared failure mode: *"I gate what a machine can assert and
+undervalue what only a person notices."* So the gate binds evidence, and the loop
+binds only to findings that claimed evidence in the first place.
+
+### The gate — run by the orchestrator between R1 and R2
+
+1. **Count the tags.** For each `R1-<drone>.md`, count `[instrumented]` and
+   `[judgement]` findings.
+2. **Check the instrumented ones actually ran.** An `[instrumented]` finding must
+   name its instrument AND quote real output. A tag with no output, a paraphrased
+   result, or a number with no command behind it **fails the gate**.
+3. **Re-spawn once, and only on a real miss.** A drone gets one re-spawn if it
+   filed ZERO `[instrumented]` findings against a target its Instruments line can
+   actually reach — a live daemon it never probed, a test script it never ran, a
+   duplicated set it never diffed. The re-brief names the specific instrument it
+   skipped. **A lens whose target genuinely offers nothing to instrument passes the
+   gate on judgement alone** — Nebula reviewing brand coherence is not failing by
+   filing no numbers.
+4. **Log it.** Write `R1-evidence-audit.md`: per drone, the two counts, any failed
+   findings with the reason, and any re-spawn. This file is required reading in R4.
+
+### The bounded re-run — findings that claimed evidence and lost
+
+An `[instrumented]` finding whose check is later contradicted — by another drone,
+by the orchestrator, or by a re-measurement — goes back to its author for ONE
+re-run with the contradicting evidence attached. The author either produces a
+passing measurement or withdraws the finding in writing.
+
+- **Cap: two extra rounds total across the whole review.** Past that, unresolved
+  instrumented findings are demoted to `[judgement]` and carried into R4 as open
+  questions. The review never blocks on an oracle that will not settle.
+- **`[judgement]` findings NEVER enter this loop.** Taste disagreements resolve
+  through the §1b dissent doctrine and R5 block rights, which already handle them
+  properly. Looping a taste call just launders opinion as process.
+- Iris's scar is the precedent this exists for: *"I invented a spec for a feature
+  that did not exist and argued a channel plan on top of it for a full round."*
+  She withdrew it herself, one round late. The re-run makes that one round earlier.
+
+### Why the tags matter more than they look
+
+A confident report and a correct report read identically. The tag is the only cheap
+thing that separates them, and both tags are honourable — this gate exists to stop
+judgement being dressed as measurement, never to devalue judgement.
+
+---
 
 ### Round 2 — Paired cross-reference (3 pairs + 1 solo)
 
@@ -394,7 +459,11 @@ Length: 600-900 words. Sign off as <drone name>.
 
 ### Round 4 — Orchestrator action plan (Pulsar / you, the running session)
 
-NOT delegated. The orchestrator reads ALL prior outputs (21 files) and writes the synthesised plan.
+NOT delegated. The orchestrator reads ALL prior outputs (21 files) **plus
+`R1-evidence-audit.md` (§2b)** and writes the synthesised plan. The audit decides how
+much weight each finding carries: an `[instrumented]` finding with quoted output is
+committed against, a `[judgement]` finding is argued, and a finding that failed the
+gate does not enter the plan at all.
 
 **Output:** `R4-orchestrator-action-plan.md`.
 
@@ -428,12 +497,26 @@ An exposure silently dropped between R1 and R4 is the failure mode.
 
 **Length:** 1200-2000 words. The keystone deliverable.
 
-### Round 5 — Re-review (8 agents — 9 with `--with-legal` — with R4 in hand)
+### Round 5 — Re-review against the ARTEFACT (8 agents — 9 with `--with-legal`)
 
-Each drone reads R4 and writes a ≤300-word sign-off:
+**The drone re-reads the TARGET, not the plan.** R4 is a synthesis of the team's own
+R3 positions, so a round spent reviewing R4 asks the team whether it agrees with
+itself — the exact self-justification the evidence gate exists to prevent. R5 goes
+back to the thing being reviewed and checks it against R1.
 
+Each drone re-opens the target, re-runs the instruments it used in R1, and writes a
+≤300-word sign-off:
+
+- **Finding-by-finding disposition of its own R1 list.** For each: still present,
+  fixed, or was wrong. `[instrumented]` findings must be re-measured and the new
+  output quoted next to the R1 output. A finding silently dropped between R1 and R5
+  is the failure mode.
 - "I agree" / "I agree with caveat X" / "I block on issue Y"
 - One sentence on what it learned across the five rounds.
+
+If the target has not changed since R1 (a review with no build phase between), the
+drone says so plainly and dispositions its findings against the unchanged artefact.
+That is a valid sign-off, not a skipped one.
 
 **Output:** `R5-<drone>-signoff.md` for each.
 
