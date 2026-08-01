@@ -138,6 +138,24 @@ for cat in sorted(registry_set):
 if missing_build_copy:
     fail.append(f"build-pulsar-app.sh: missing frame filenames: {missing_build_copy}")
 
+# --- 7b. Evidence gate survives (added 2026-08-01) ---------------------------
+# The gate is three cooperating edits. Any one silently deleted and the review
+# quietly reverts to unchecked judgement, which is exactly what it exists to
+# stop. Assert all three anchors, plus the R4 wiring that makes the audit bind.
+evidence_anchors = [
+    (r"##\s*2b\.\s*The evidence gate", "§2b evidence-gate section"),
+    (r"EVIDENCE GATE", "R1 brief's evidence-gate instruction"),
+    (r"\[instrumented\]", "[instrumented] tag"),
+    (r"\[judgement\]", "[judgement] tag"),
+    (r"R1-evidence-audit\.md", "R1-evidence-audit.md artefact"),
+    (r"Round 5 — Re-review against the ARTEFACT", "R5-reviews-the-artefact heading"),
+]
+missing_evidence = [label for pat, label in evidence_anchors
+                    if not re.search(pat, skill)]
+if missing_evidence:
+    fail.append("SKILL.md: evidence gate incomplete, missing: "
+                + ", ".join(missing_evidence))
+
 # --- 8. Fictional-personas disclaimer names every §1 drone -------------------
 dm = re.search(r"^>.*FICTIONAL.*$", skill, re.M)
 if not dm:
