@@ -409,6 +409,61 @@ else:
                 f"    D3 ownership: red on a DESIGN surface -> Nova, 48h SLA."
             )
 
+# --- 12. Embedded claude-integration payload matches its canonical sources ---
+# build-pulsar-app.sh re-syncs Sources/Resources/claude-integration/ from the
+# repo's canonical copies on every build, because the embedded copy "had to be
+# hand-copied on every edit" and forked silently (noted in that script,
+# 2026-07-20). But the staged copies are COMMITTED, so editing a canonical file
+# without a follow-up build+commit leaves the shipped app carrying stale docs
+# until someone happens to build. That is exactly what happened again on
+# 2026-08-04: pulsar-team/SKILL.md gained §1d in 799c97a and the embedded copy
+# was 33 lines behind.
+#
+# The re-sync fixes it at BUILD time; this check fails it at REVIEW time.
+# Derived by path rule rather than a hardcoded list, so a newly-staged file is
+# covered the moment it appears.
+stage = pathlib.Path(repo_root) / "macos/Pulsar/Sources/Resources/claude-integration"
+
+def canonical_for(rel: pathlib.PurePath):
+    parts = rel.parts
+    if parts[:1] == ("scripts",):
+        return pathlib.Path(repo_root) / "scripts" / pathlib.Path(*parts[1:])
+    if parts[:2] == ("skills", "pulsar-team"):
+        return pathlib.Path(repo_root) / "pulsar-team" / pathlib.Path(*parts[2:])
+    if len(parts) == 1 and parts[0] in {"SKILL.md", "CANON.md", "voices.json"}:
+        return pathlib.Path(repo_root) / parts[0]
+    return None          # not a synced surface (e.g. app-only payload files)
+
+if not stage.is_dir():
+    fail.append(f"claude-integration staging dir missing: {stage}")
+else:
+    drifted, orphaned = [], []
+    for staged in sorted(stage.rglob("*")):
+        if not staged.is_file() or staged.name == ".DS_Store":
+            continue
+        rel = staged.relative_to(stage)
+        canon = canonical_for(rel)
+        if canon is None:
+            continue
+        if not canon.is_file():
+            orphaned.append(f"{rel} (no canonical source at {canon.relative_to(repo_root)})")
+            continue
+        if staged.read_bytes() != canon.read_bytes():
+            drifted.append(f"{rel}  !=  {canon.relative_to(repo_root)}")
+    if drifted:
+        fail.append(
+            "Embedded claude-integration payload has drifted from its canonical "
+            "source(s) — the shipped app would carry stale copies:\n"
+            + "".join(f"    {d}\n" for d in drifted)
+            + "    Fix: run scripts/build-pulsar-app.sh (it re-syncs them), then\n"
+            "    commit the updated staging copies alongside the canonical edit."
+        )
+    if orphaned:
+        fail.append(
+            "Embedded claude-integration payload has file(s) with no canonical "
+            "source:\n" + "".join(f"    {o}\n" for o in orphaned)
+        )
+
 # --- Report ------------------------------------------------------------------
 if fail:
     sys.stderr.write("cast-check: FAIL — cast is inconsistent\n\n")
