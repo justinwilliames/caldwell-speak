@@ -274,6 +274,141 @@ else:
                 f"    art to match the code (or land a ratified colour change in both)."
             )
 
+# --- 11. DESIGN-SURFACE: frame centring + inter-frame registration -----------
+# Added 2026-08-04 after Pulsar shipped with his head 10.4px left of centre in
+# the 362px square (2.9% of the canvas — visible in the squircle as a fat gap on
+# one side). The masters were all centred; the miss entered in the sprite-cell
+# crop that derives the frames, and nothing could see it. Check 10 reads colour;
+# nothing read geometry.
+#
+# 11a — REGISTRATION (absolute, prop-immune): every frame in a set must be
+# pixel-identical in placement to that set's mouth-0. Phase correlation must
+# return (0,0). This is what catches a re-derived frame set drifting.
+#
+# 11b — CENTRING (per-drone baseline): the head's bilateral-symmetry axis vs the
+# canvas centre. Deliberately baselined per drone rather than gated at zero,
+# because several units carry intrinsic design asymmetry that the metric reads as
+# offset even when the art is correctly centred — nebula's swept quiff and
+# antenna ball put her at -21.0 while a visual check confirms she is centred.
+# Absolute-zero gating would false-positive her forever. The baseline encodes
+# "this drone's reading WHEN CORRECT"; drift from it is the regression signal.
+CENTRING_BASELINE = {
+    "atlas":    -3.0,
+    "echo":     +2.0,
+    "iris":     -1.5,
+    "meridian": -3.5,
+    "nebula":  -21.0,   # intrinsic: swept quiff + single antenna ball, verified centred
+    "nova":     -1.5,
+    "pulsar":   -0.5,   # was -10.4 pre-fix; re-centred 2026-08-04 by a +10px integer shift
+    "sentinel": -2.5,
+    "voyager":  -1.5,
+}
+CENTRING_TOL = 3.0      # px on the 362px canvas; the fixed miss was 10.4px
+
+try:
+    import numpy as _np
+except ImportError:
+    _np = None
+
+if Image is None or _np is None:
+    geom_report = None
+else:
+    def _blur(a, r=2):
+        k = _np.ones(2 * r + 1) / (2 * r + 1)
+        a = _np.apply_along_axis(lambda m: _np.convolve(m, k, mode="same"), 1, a)
+        return _np.apply_along_axis(lambda m: _np.convolve(m, k, mode="same"), 0, a)
+
+    def _lum(path):
+        im = _np.asarray(Image.open(path).convert("RGB")).astype(_np.float64)
+        return 0.2126 * im[:, :, 0] + 0.7152 * im[:, :, 1] + 0.0722 * im[:, :, 2]
+
+    def sym_offset(path, search=70, step=0.5):
+        """Head symmetry axis minus canvas centre, in px. Negative = head sits left."""
+        lum = _blur(_lum(path))
+        H, W = lum.shape
+        b = lum[int(0.10 * H):int(0.60 * H), :]
+        b = b - b.mean()
+        xs = _np.arange(W)
+        best = (0.0, -2.0)
+        for a in _np.arange(W / 2 - search, W / 2 + search + step / 2, step):
+            mx = _np.rint(2 * a - xs).astype(int)
+            ok = (mx >= 0) & (mx < W)
+            if ok.sum() < W * 0.5:
+                continue
+            A = b[:, xs[ok]]
+            B = b[:, mx[ok]]
+            den = _np.sqrt((A * A).sum() * (B * B).sum())
+            r = (A * B).sum() / den if den else -2.0
+            if r > best[1]:
+                best = (a - W / 2, r)
+        return best[0]
+
+    def frame_shift(ref, mov):
+        """Integer (dx, dy) translation of `mov` relative to `ref`, phase correlation."""
+        R = _np.fft.fft2(ref) * _np.conj(_np.fft.fft2(mov))
+        R /= (_np.abs(R) + 1e-9)
+        c = _np.fft.ifft2(R).real
+        iy, ix = _np.unravel_index(_np.argmax(c), c.shape)
+        H, W = c.shape
+        return (ix - W if ix > W // 2 else ix), (iy - H if iy > H // 2 else iy)
+
+    # Pulsar is NOT in registry_set — he is the orchestrator, not a spawnable
+    # category — so every registry-driven check above skips him. He is also the
+    # drone this check exists because of. Add him back explicitly.
+    geom_cats = sorted(registry_set | {"pulsar"})
+
+    geom_report = []
+    for cat in geom_cats:
+        base = res / f"{cat}-mouth-0.png"
+        if not base.is_file():
+            fail.append(
+                f"[DESIGN-SURFACE] {cat}: no {cat}-mouth-0.png — portrait geometry "
+                f"cannot be checked."
+            )
+            continue
+        ref = _lum(str(base))
+        ref = ref - ref.mean()
+        drift = []
+        for k in [f"mouth-{i}" for i in range(1, 5)] + ["blink"]:
+            p = res / f"{cat}-{k}.png"
+            if not p.is_file():
+                continue
+            mov = _lum(str(p))
+            dx, dy = frame_shift(ref, mov - mov.mean())
+            if abs(dx) > 1 or abs(dy) > 1:
+                drift.append(f"{k}=({dx:+d},{dy:+d})")
+        if drift:
+            fail.append(
+                f"[DESIGN-SURFACE] {cat}: lip-sync frames are not registered to "
+                f"{cat}-mouth-0 — the face jumps as the mouth animates.\n"
+                f"    drifted: {', '.join(drift)}\n"
+                f"    D3 ownership: red on a DESIGN surface -> Nova, 48h SLA."
+            )
+
+        got = sym_offset(str(base))
+        want = CENTRING_BASELINE.get(cat)
+        if want is None:
+            fail.append(
+                f"[DESIGN-SURFACE] {cat}: no CENTRING_BASELINE entry in cast-check.sh.\n"
+                f"    measured {got:+.1f}px. A new drone must land a ratified baseline\n"
+                f"    here (measure it, eyeball it, then record it) or the centring\n"
+                f"    gate silently does not cover it."
+            )
+            continue
+        delta = abs(got - want)
+        geom_report.append((cat, want, got, delta))
+        if delta > CENTRING_TOL:
+            fail.append(
+                f"[DESIGN-SURFACE] {cat}: portrait centring drifted from its "
+                f"ratified baseline.\n"
+                f"    baseline: {want:+.1f}px    measured: {got:+.1f}px    "
+                f"drift: {delta:.1f}px > tolerance {CENTRING_TOL:.0f}px\n"
+                f"    (negative = head sits LEFT of the 362px canvas centre)\n"
+                f"    Either the frames were re-derived off-centre (fix the crop), or\n"
+                f"    the art legitimately changed (re-ratify the baseline here).\n"
+                f"    D3 ownership: red on a DESIGN surface -> Nova, 48h SLA."
+            )
+
 # --- Report ------------------------------------------------------------------
 if fail:
     sys.stderr.write("cast-check: FAIL — cast is inconsistent\n\n")
@@ -304,4 +439,17 @@ else:
         bar = "tight" if delta > HUE_TOL * 0.75 else "ok"
         print(f"    {cat:<9} registry {want:6.1f}°  art {got:6.1f}°  "
               f"Δ {delta:5.1f}°  [{bar}]")
+
+if geom_report is None:
+    print()
+    print("  !! check 11 (DESIGN-SURFACE portrait geometry) NOT RUN — needs Pillow")
+    print("     and numpy. Frame centring and lip-sync registration are unchecked.")
+else:
+    print()
+    print(f"  DESIGN-SURFACE portrait centring (tolerance ±{CENTRING_TOL:.0f}px on 362px,")
+    print("  vs ratified per-drone baseline; all frame sets registered to mouth-0):")
+    for cat, want, got, delta in sorted(geom_report, key=lambda r: -r[3]):
+        bar = "tight" if delta > CENTRING_TOL * 0.75 else "ok"
+        print(f"    {cat:<9} baseline {want:+6.1f}px  measured {got:+6.1f}px  "
+              f"drift {delta:4.1f}px  [{bar}]")
 PYEOF

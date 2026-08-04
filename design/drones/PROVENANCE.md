@@ -33,6 +33,32 @@ cells) from the approved master, cropped, then registered with OpenCV
 | meridian | `design/drones/meridian.png` | `meridian-mouth-0..4`, `meridian-blink` |
 | pulsar | `assets/readme/pulsar.png` | `pulsar-mouth-0..4`, `pulsar-blink` |
 
+### Rev 9.1 — Pulsar re-centred (2026-08-04)
+
+Pulsar's frame set shipped with his head **10.4px left** of the 362px canvas
+centre (2.9% of the width), which reads in the squircle as a fat gap on his
+right. Measured three ways — head bilateral-symmetry axis (−10.4px), head-bbox
+centroid (−10.0px), and left/right silhouette gap (16px vs 35px, −9.5px).
+
+**The masters were not at fault.** Every master measures within ±0.6% of centre,
+Pulsar's `assets/readme/pulsar.png` included (+0.8%). The miss entered in the
+sprite-cell crop that derives the 362px frames, and only for Pulsar — the other
+eight frame sets measure −1.0% to +0.4%. Nebula's symmetry metric reads −21px,
+but that is intrinsic design asymmetry (swept quiff, single antenna ball); a
+visual check confirms she is centred.
+
+**Correction:** all six Pulsar frames translated **+10px right** as a pure
+integer pixel copy, with column 0 replicated into the vacated 10px strip. No
+resampling, so no softening; the strip is background (only 13 rows have any
+subject at the left edge, and those sit outside the squircle's clipped corner).
+Result: Pulsar now measures −0.5px (−0.14%), the best-centred of the nine.
+Inter-frame registration is unchanged — phase correlation of every frame against
+its `mouth-0` still returns (0,0) for all nine sets.
+
+Regression cover: `scripts/cast-check.sh` **check 11** now gates both portrait
+centring (per-drone ratified baseline, ±3px) and lip-sync frame registration.
+Both arms are negative-tested.
+
 Frames live in `macos/Pulsar/Sources/Resources/`. Pre-Rev-8 masters are retained at `design/drones/pre-rev8/` and the original
 pre-machined cast at `design/drones/before/`. Meridian's Rev 9 master was
 generated as four FULL re-renders rather than masked edits, after compounding
