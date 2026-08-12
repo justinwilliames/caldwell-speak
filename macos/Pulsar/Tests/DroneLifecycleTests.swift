@@ -210,6 +210,33 @@ func runAll() async {
         await expect(await actor.inFlightDronesSnapshot()["d1"] == "nova", "generic re-start doesn't demote")
     }
 
+    // Centre-collision guard: "pulsar" is the seat, not a drone. Registering a
+    // sub-agent under it used to render a pixel-identical SECOND Pulsar in the
+    // orbit (no DroneRegistry record → every lookup falls through to the Pulsar
+    // defaults, incl. the frame set). It must normalise to the generic
+    // "unknown" — presence kept, face de-duplicated, still claimable on speak.
+    await test("registering under \"pulsar\" normalises to unknown (no duplicate centre)") {
+        let (actor, _) = await makeActor()
+        await actor.addInFlightDrone(id: "p1", category: "pulsar")
+        await expect(await actor.inFlightDronesSnapshot()["p1"] == "unknown",
+                     "pulsar → unknown, never a second centre")
+        await actor.addInFlightDrone(id: "p2", category: "  PULSAR  ")
+        await expect(await actor.inFlightDronesSnapshot()["p2"] == "unknown",
+                     "case/whitespace variants normalise too")
+        await actor.addInFlightDrone(id: "p3", category: "")
+        await expect(await actor.inFlightDronesSnapshot()["p3"] == "unknown",
+                     "empty category → unknown, not a blank centre")
+        // Normalised-to-generic must stay claimable, or a real --agent line
+        // later in that sub-agent's run could never fix the face.
+        _ = await actor.promoteInFlightDrone(toCategory: "nova")
+        let claimed = await actor.inFlightDronesSnapshot().values.contains("nova")
+        await expect(claimed, "normalised drone is still promotable on speak")
+        // A real drone category is untouched by the guard.
+        await actor.addInFlightDrone(id: "v1", category: "Voyager")
+        await expect(await actor.inFlightDronesSnapshot()["v1"] == "voyager",
+                     "real categories pass through (lowercased)")
+    }
+
     // 7. Idempotent removal — removing an absent id returns false
     await test("removing an absent id returns false") {
         let (actor, _) = await makeActor()

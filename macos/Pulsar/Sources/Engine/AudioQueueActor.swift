@@ -504,8 +504,21 @@ actor AudioQueueActor {
     /// existing category is still generic (atlas/unknown). A generic incoming
     /// category never demotes a promoted label. `lastSeen` is always refreshed
     /// (the drone is genuinely live right now).
+    ///
+    /// Centre-collision guard: "pulsar" is NOT a drone (no `DroneRegistry`
+    /// record), so every lookup falls through to the Pulsar defaults — indigo,
+    /// no badge, and `PortraitView` loads the pulsar frame set. A sub-agent
+    /// registering under that category therefore renders a pixel-identical
+    /// SECOND Pulsar in the orbit. `promoteInFlightDrone` has always rejected
+    /// "pulsar"; this path did not, which is how the duplicate got in. Normalise
+    /// to the generic "unknown" (grey, "?" badge) rather than dropping the
+    /// registration: the agent IS live, so it must keep its presence — and
+    /// "unknown" stays claimable by `promoteInFlightDrone` if the agent later
+    /// speaks under a real drone tag.
     func addInFlightDrone(id: String, category: String, sessionId: String? = nil) {
         pendingRemoval.remove(id)
+        let trimmed = category.trimmingCharacters(in: .whitespaces).lowercased()
+        let category = (trimmed.isEmpty || trimmed == "pulsar") ? "unknown" : trimmed
         if let existing = inFlight[id] {
             let existingIsGeneric = existing.category == "atlas" || existing.category == "unknown"
             let category = existingIsGeneric ? category : existing.category
