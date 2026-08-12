@@ -464,9 +464,14 @@ actor AudioQueueActor {
         guard let data = try? Data(contentsOf: dronesStoreURL),
               let snapshot = try? JSONDecoder().decode([String: PersistedDrone].self, from: data)
         else { return }
+        // Normalise on the way IN. This path assigns `inFlight` directly, so it
+        // bypasses both the /subagent/start degrade and `addInFlightDrone`'s own
+        // guard — a store written by an older build (or hand-edited) could
+        // otherwise restore a "pulsar" entry and put a second centre back in the
+        // orbit on every launch, surviving restarts.
         inFlight = snapshot.mapValues {
             InFlightDrone(
-                category: $0.category,
+                category: Self.normalisedCategory($0.category),
                 lastSeen: Date(timeIntervalSince1970: $0.lastSeen),
                 sessionId: $0.sessionId)
         }
@@ -515,10 +520,14 @@ actor AudioQueueActor {
     /// registration: the agent IS live, so it must keep its presence — and
     /// "unknown" stays claimable by `promoteInFlightDrone` if the agent later
     /// speaks under a real drone tag.
+    static func normalisedCategory(_ raw: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespaces).lowercased()
+        return (trimmed.isEmpty || trimmed == "pulsar") ? "unknown" : trimmed
+    }
+
     func addInFlightDrone(id: String, category: String, sessionId: String? = nil) {
         pendingRemoval.remove(id)
-        let trimmed = category.trimmingCharacters(in: .whitespaces).lowercased()
-        let category = (trimmed.isEmpty || trimmed == "pulsar") ? "unknown" : trimmed
+        let category = Self.normalisedCategory(category)
         if let existing = inFlight[id] {
             let existingIsGeneric = existing.category == "atlas" || existing.category == "unknown"
             let category = existingIsGeneric ? category : existing.category

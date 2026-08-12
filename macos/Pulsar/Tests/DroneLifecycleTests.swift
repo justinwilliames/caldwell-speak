@@ -160,6 +160,26 @@ func runAll() async {
         await expect(afterSeen != nil && delta < 0.001, "lastSeen preserved through round-trip")
     }
 
+    // A store written by an OLDER build can hold a "pulsar" entry. restoreInFlight
+    // assigns `inFlight` directly, so it bypasses both the /subagent/start degrade
+    // and addInFlightDrone's guard — without normalising here, that entry puts a
+    // second centre back in the orbit on every launch, surviving restarts.
+    await test("restore normalises a legacy \"pulsar\" entry (no centre resurrection)") {
+        let (_, store) = await makeActor()
+        let legacy = """
+        {"old1":{"category":"pulsar","lastSeen":\(Date().timeIntervalSince1970),"sessionId":"s1"},\
+        "old2":{"category":"voyager","lastSeen":\(Date().timeIntervalSince1970),"sessionId":"s1"}}
+        """
+        try? legacy.write(to: store, atomically: true, encoding: .utf8)
+
+        let restored = AudioQueueActor()
+        await restored.setDronesStoreOverride(store)
+        await restored.restoreInFlight()
+        let snap = await restored.inFlightDronesSnapshot()
+        await expect(snap["old1"] == "unknown", "legacy pulsar entry restores as unknown")
+        await expect(snap["old2"] == "voyager", "real category survives restore untouched")
+    }
+
     // 5. promote — generic promoted; already-labelled is a no-op; empty/pulsar never
     await test("promote: generic promoted, labelled is a no-op") {
         let (actor, _) = await makeActor()
