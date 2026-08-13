@@ -65,11 +65,16 @@ caller involvement (override with `--session NAME` / `--session-ref ID`):
   `CLAUDE_CODE_SESSION_ID`.
 
 The daemon carries both through the queue into `voice_active`, `/queue` and
-`/history`. The floating panel shows the name as a plate on the speaker's lower
-edge, and clicking the speaking head (or the plate) opens
-`claude://resume?session=<ref>` — the desktop app's own deep link, which focuses
-an already-open session rather than importing a second copy. Sub-agents inherit
-the env, so a drone attributes to — and clicks through to — its parent session.
+`/history`. On the floating panel the name is a **hover reveal**: point at the
+speaking drone's face and a nameplate fades in on its lower edge. Clicking the
+face or the plate opens `claude://resume?session=<ref>` — the desktop app's own
+deep link, which focuses an already-open session rather than importing a second
+copy. Sub-agents inherit the env, so a drone attributes to — and clicks through
+to — its parent session.
+
+Hover uses an explicit `.activeAlways` `NSTrackingArea` (`HoverTracker`), not
+SwiftUI's `.onHover`: Pulsar is a background app with a non-activating panel, so
+hover has to work while another app is frontmost.
 
 ## Sub-agent Drone Swarm
 

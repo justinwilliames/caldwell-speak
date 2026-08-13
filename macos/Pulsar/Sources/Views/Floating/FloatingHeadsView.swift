@@ -165,17 +165,19 @@ struct FloatingHeadsView: View {
                         // from. Only wired for the centre occupant, and only when
                         // that session is actually addressable.
                         openSession: sessionRef.map { ref in { SessionLink.open(ref) } },
-                        sessionName: sessionName
+                        sessionName: sessionName,
+                        onPortraitHover: { hoveringPortrait = $0 }
                     )
                     .id(p.id)
                     .zIndex(p.isCentre ? 20 : Double(7 - p.orbitIndex))
                 }
 
-                // WHICH session is talking. Sits on the speaker's lower edge like
-                // a nameplate — inside the 120pt squircle, so it never collides
-                // with the caption bubble that attaches just below it. Only shown
-                // while someone actually holds the centre.
-                if speaker != nil, let session = sessionName {
+                // WHICH session is talking — revealed only while the pointer is on
+                // the speaking drone, so the resting panel stays a face and a line
+                // of speech. Sits on the speaker's lower edge like a nameplate,
+                // inside the 120pt squircle, so it never collides with the caption
+                // bubble that attaches just below it.
+                if speaker != nil, let session = sessionName, showSessionPlate {
                     sessionNameplate(session)
                         .offset(y: 50)
                         .zIndex(30)
@@ -183,7 +185,12 @@ struct FloatingHeadsView: View {
                 }
             }
         }
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: showSessionPlate)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: sessionName)
+        // A speaker change tears the portrait's tracking area down without an exit
+        // event, so the hover flags would latch on. Clear them on every swap.
+        .onChange(of: currentSpeakerKey) { _, _ in clearHover() }
+        .onChange(of: speaker == nil) { _, _ in clearHover() }
         .frame(width: Self.headZoneWidth, height: Self.headZoneHeight)
         // [FIX 3 — Reduce Motion] All slot-glide springs are gated on
         // `reduceMotion`. When on, animations are nil (instant snap) so
@@ -205,6 +212,20 @@ struct FloatingHeadsView: View {
     }
 
     // MARK: - Session attribution
+
+    /// Pointer is over the speaking portrait / over the nameplate itself. Two
+    /// flags rather than one: the plate overlaps the portrait and can be wider
+    /// than it, so whichever the pointer is actually inside has to hold the
+    /// reveal open — otherwise moving from face to plate flickers it away.
+    @State private var hoveringPortrait = false
+    @State private var hoveringPlate = false
+
+    private var showSessionPlate: Bool { hoveringPortrait || hoveringPlate }
+
+    private func clearHover() {
+        hoveringPortrait = false
+        hoveringPlate = false
+    }
 
     /// Name of the session the current-or-lingering line is spoken from. Empty
     /// resolves to nil so an unattributed line shows no plate rather than a blank.
@@ -252,12 +273,15 @@ struct FloatingHeadsView: View {
             // mouseDown instead of starting a drag.
             Button { SessionLink.open(ref) } label: { plate }
                 .buttonStyle(.plain)
-                .onHover { inside in
-                    if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
-                }
+                .background(HoverTracker { hovering in
+                    hoveringPlate = hovering
+                    if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                })
                 .help("Open the “\(name)” session in Claude Code")
         } else {
-            plate.help("Speaking from “\(name)”")
+            plate
+                .background(HoverTracker { hoveringPlate = $0 })
+                .help("Speaking from “\(name)”")
         }
     }
 
@@ -683,6 +707,9 @@ private struct ParticipantSlotView: View {
     var openSession: (() -> Void)?
     /// That session's display name, for the portrait's tooltip.
     var sessionName: String?
+    /// Pointer entered/left the CENTRE portrait — drives the session nameplate's
+    /// hover reveal. Never fired for orbiting participants.
+    var onPortraitHover: ((Bool) -> Void)?
 
     /// Full centre portrait size (matches FloatingPortraitView.portraitSize).
     private let centrePortraitSize: CGFloat = 120
@@ -729,15 +756,24 @@ private struct ParticipantSlotView: View {
                         // doesn't swallow the mouseDown.
                         Button(action: openSession) { portrait }
                             .buttonStyle(.plain)
-                            .onHover { inside in
-                                if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
-                            }
                             .help(sessionName.map { "Open the “\($0)” session in Claude Code" }
                                   ?? "Open this session in Claude Code")
                     } else {
                         portrait
                     }
                 }
+                // Hover is tracked over the FACE, not the portrait's full frame —
+                // that frame is 230pt to give the glow ripple room, which would
+                // arm the reveal across most of the panel. The squircle is 120pt.
+                .overlay(
+                    HoverTracker { hovering in
+                        onPortraitHover?(hovering)
+                        if openSession != nil {
+                            if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                        }
+                    }
+                    .frame(width: centrePortraitSize, height: centrePortraitSize)
+                )
                 // Explicit opacity transition so the portrait fades in/out cleanly
                 // as a participant enters/leaves the centre, matching the thumbnail
                 // fade on the orbit layer below.
@@ -778,6 +814,56 @@ private struct ParticipantSlotView: View {
             insertion: .scale(scale: 0.1).combined(with: .opacity).combined(with: .offset(y: 30)),
             removal: .scale(scale: 0.6).combined(with: .opacity).combined(with: .offset(y: -24))
         ))
+    }
+}
+
+/// Reports pointer enter/exit for the view it backs.
+///
+/// SwiftUI's `.onHover` is not dependable here: Pulsar is a background (menu-bar)
+/// app and the floating panel is non-activating, so hover has to keep working
+/// while another app is frontmost. This uses an explicit `.activeAlways` tracking
+/// area, which does. `hitTest` returns nil so the tracker can never intercept a
+/// click meant for the button it sits behind.
+private struct HoverTracker: NSViewRepresentable {
+    let onChange: (Bool) -> Void
+
+    func makeNSView(context: Context) -> TrackingView {
+        let view = TrackingView()
+        view.onChange = onChange
+        return view
+    }
+
+    func updateNSView(_ view: TrackingView, context: Context) {
+        view.onChange = onChange
+    }
+
+    final class TrackingView: NSView {
+        var onChange: ((Bool) -> Void)?
+        private var area: NSTrackingArea?
+
+        override func updateTrackingAreas() {
+            super.updateTrackingAreas()
+            if let area { removeTrackingArea(area) }
+            let fresh = NSTrackingArea(
+                rect: .zero,
+                options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+                owner: self)
+            addTrackingArea(fresh)
+            area = fresh
+        }
+
+        override func mouseEntered(with event: NSEvent) { onChange?(true) }
+        override func mouseExited(with event: NSEvent)  { onChange?(false) }
+
+        /// A pure observer — never a hit-test target.
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+        /// The panel can hide mid-hover (no exit event follows), so drop the
+        /// reveal as the view leaves the window rather than leaving it latched.
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if window == nil { onChange?(false) }
+        }
     }
 }
 
