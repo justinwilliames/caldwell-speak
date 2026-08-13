@@ -145,6 +145,26 @@ rm -rf "$APP_BUNDLE/Contents/Frameworks/Sparkle.framework"
 # ditto preserves the framework's Versions/ symlink layout (cp -R mangles it).
 ditto "$FRAMEWORK_SRC" "$APP_BUNDLE/Contents/Frameworks/Sparkle.framework"
 
+# Embed MLX's Metal shader library, for the Kokoro voice engine.
+#
+# `swift build` cannot compile MLX's Metal kernels (mlx-swift's README states this
+# outright), and the failure is silent: the build exits 0 and MLX only dies at
+# runtime with "Failed to load the default metallib". So fetch the matching
+# precompiled shaders and colocate them with the executable — MLX checks the
+# binary's own directory FIRST (backend/metal/device.cpp), before any bundle path.
+#
+# Not fatal if it fails: Kokoro is the OPT-IN engine, and Pulsar still speaks via
+# macOS `say` without it. Better to ship a working app with one engine than to
+# fail the build over an optional one.
+METALLIB_DEST="$APP_BUNDLE/Contents/MacOS/mlx.metallib"
+# Absolute path: the script cd's to $APP_DIR above, so a $0-relative path breaks.
+if "$SCRIPT_DIR/fetch-mlx-metallib.sh" "$METALLIB_DEST"; then
+  echo "Kokoro engine: Metal shaders embedded ($(du -h "$METALLIB_DEST" | cut -f1))."
+else
+  echo "Warning: could not fetch mlx.metallib — the Kokoro voice engine will be" >&2
+  echo "         unavailable in this build. macOS 'say' is unaffected." >&2
+fi
+
 # Ad-hoc sign, inside-out: the embedded framework first (--deep catches its
 # nested XPC services + Updater.app + Autoupdate), then the whole app last so
 # its signature seals the framework and resources. Ad-hoc (`--sign -`) is

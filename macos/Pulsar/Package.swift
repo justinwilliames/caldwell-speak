@@ -21,6 +21,21 @@ let package = Package(
         // the -rpath linker flag below bakes @executable_path/../Frameworks
         // into the binary so dyld resolves the embedded framework.
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.6.0"),
+        // Kokoro-82M on-device TTS (Apache-2.0), the OPT-IN second voice engine.
+        // Vendored under Vendor/ rather than fetched by URL — see that package's
+        // Package.swift for why. Pulls mlx-swift transitively; note that
+        // `swift build` CANNOT compile MLX's Metal shaders, so the build script
+        // fetches a matching prebuilt mlx.metallib (scripts/fetch-mlx-metallib.sh)
+        // and places it beside the binary. Without it MLX fails at RUNTIME while
+        // the build still exits 0.
+        .package(path: "Vendor/kokoro-swift"),
+        // Direct (not just transitive-via-Kokoro) so KokoroVoiceClient can import
+        // MLX and BOUND ITS MEMORY. MLX's memoryLimit defaults to 1.5x the device's
+        // max recommended working set — multiple GB on a unified-memory Mac — which
+        // let a burst of syntheses swap the machine out from under itself
+        // (13.7GB of 15.4GB swap, observed 13 Aug 2026). Must stay pin-compatible
+        // with the exact version Vendor/kokoro-swift requires.
+        .package(url: "https://github.com/ml-explore/mlx-swift.git", exact: "0.31.3"),
     ],
     targets: [
         .executableTarget(
@@ -28,6 +43,10 @@ let package = Package(
             dependencies: [
                 .product(name: "Hummingbird", package: "hummingbird"),
                 .product(name: "Sparkle", package: "Sparkle"),
+                // Package identity for a path dependency is the DIRECTORY name
+                // ("kokoro-swift"), not the `Package(name:)` inside it ("Kokoro").
+                .product(name: "Kokoro", package: "kokoro-swift"),
+                .product(name: "MLX", package: "mlx-swift"),
             ],
             path: "Sources",
             resources: [

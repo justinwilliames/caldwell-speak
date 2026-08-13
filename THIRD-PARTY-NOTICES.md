@@ -23,10 +23,29 @@ versions recorded below were read from it.
   benchmarks, example servers), the package is still listed. A complete superset
   is the safe notice.
 
-Pulsar's speech is synthesised by macOS's own `say` / AVFoundation speech APIs —
-Apple system frameworks, present on the user's machine, neither bundled nor
-redistributed here, and carrying no third-party attribution obligation. No
-third-party speech, network, or analytics SDK is linked.
+Pulsar ships **two** speech engines, and they carry different obligations:
+
+- **macOS `say` / AVFoundation** (the default) — Apple system frameworks, present on
+  the user's machine, neither bundled nor redistributed here, and carrying no
+  third-party attribution obligation.
+- **Kokoro** (opt-in, off until the user downloads it) — a third-party on-device
+  neural synthesiser that IS redistributed in the app. It is statically linked from
+  `macos/Pulsar/Vendor/kokoro-swift` (Apache-2.0, vendored in-tree rather than
+  fetched by URL) together with MLX Swift (MIT). Its Metal shader library,
+  `mlx.metallib` (MIT), is fetched at build time by
+  `scripts/fetch-mlx-metallib.sh` and **redistributed inside the app bundle** at
+  `Pulsar.app/Contents/MacOS/mlx.metallib`, so it is a distributed binary and is
+  noticed accordingly in §6.
+
+Kokoro's G2P is MisakiSwift, vendored inside kokoro-swift and covered by that
+repository's Apache-2.0 grant. It is pure Swift: Pulsar does **not** link or ship
+espeak-ng, and therefore takes on no GPL obligation from the speech path.
+
+The Kokoro **model weights** (Kokoro-82M, Apache-2.0) are not redistributed. They
+are downloaded by the user, on demand, from Hugging Face at first use and stored
+outside the app bundle in Application Support.
+
+No analytics SDK is linked, and neither engine sends audio or text off the machine.
 
 **Keep this current:** when `Package.resolved` changes — a version bump, an added
 or dropped dependency — re-check this file. `scripts/build-pulsar-app.sh` copies it
@@ -62,6 +81,9 @@ carries its own notices.
 | [Swift Service Context](https://github.com/apple/swift-service-context) | 1.3.0 | Apache-2.0 | [§2.3](#23-required-notice-content) |
 | [Swift Service Lifecycle](https://github.com/swift-server/swift-service-lifecycle) | 2.11.0 | Apache-2.0 | [§2.3](#23-required-notice-content) |
 | [Swift System](https://github.com/apple/swift-system) | 1.6.4 | Apache-2.0 with Runtime Library Exception | [§2.1](#21-apache-license-20--full-text) |
+| [kokoro-swift](https://github.com/mweinbach/kokoro-swift) (vendored, incl. its MisakiSwift G2P) | 20bf04c | Apache-2.0 | [§2.1](#21-apache-license-20--full-text) |
+| [MLX Swift](https://github.com/ml-explore/mlx-swift) | 0.31.3 | MIT | [§6](#6-mlx--mit) |
+| [MLX Metal shader library](https://pypi.org/project/mlx-metal/) (`mlx.metallib`, redistributed binary) | 0.31.1 | MIT | [§6](#6-mlx--mit) |
 
 Vendored and derived code carried *inside* those components — BoringSSL, llhttp,
 zlib and the rest — is listed in [§3](#3-code-vendored-or-derived-inside-the-components-above).
@@ -1420,3 +1442,47 @@ Speech synthesis (`say` / AVFoundation), the menu-bar and window surfaces
 linked against, not redistributed, and their use is governed by the macOS software
 licence agreement rather than by any notice reproduced here.
 
+
+---
+
+## 6. MLX — MIT
+
+Kokoro, Pulsar's opt-in on-device neural voice, runs on Apple's MLX. Two MLX
+artefacts are distributed with the app:
+
+- **MLX Swift 0.31.3** — statically linked into `Pulsar.app/Contents/MacOS/Pulsar`,
+  reaching the build graph transitively through the vendored `kokoro-swift` package.
+  It bundles MLX C++ 0.31.1 as a git submodule under the same MIT grant.
+- **`mlx.metallib` (MLX 0.31.1)** — the precompiled Metal shader library, copied
+  into `Pulsar.app/Contents/MacOS/mlx.metallib` by `scripts/build-pulsar-app.sh`.
+  It is fetched from the `mlx-metal` distribution on PyPI, which repackages the
+  shaders built from the same MIT-licensed MLX sources. This is a **redistributed
+  binary**, which is why it is noticed here rather than treated as a build tool.
+
+The version pin matters and is not cosmetic: the metallib must match the MLX C++
+version that MLX Swift vendors, or kernels resolve at runtime and fail. Both are
+0.31.1 today.
+
+```
+MIT License
+
+Copyright (c) 2023 ml-explore
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
