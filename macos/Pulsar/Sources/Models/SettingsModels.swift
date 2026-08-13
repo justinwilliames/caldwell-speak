@@ -22,6 +22,13 @@ struct DaemonSettings: Codable, Sendable {
     /// Installed local voices usable in free mode (drives the voice picker),
     /// each with a "Name (Language, Region)" label.
     let availableVoices: [NativeVoiceClient.VoiceOption]?
+    /// The synthesiser actually in use — "native" or "kokoro". Already degraded by
+    /// the daemon, so this is what will speak, not merely what was selected.
+    let voiceEngine: String?
+    /// Whether this Mac can run Kokoro at all (Apple Silicon).
+    let kokoroSupported: Bool?
+    /// Whether the Kokoro model is downloaded and complete.
+    let kokoroInstalled: Bool?
 
     enum CodingKeys: String, CodingKey {
         case muted
@@ -33,6 +40,9 @@ struct DaemonSettings: Codable, Sendable {
         case subtitlesEnabled = "subtitles_enabled"
         case showActiveAgents = "show_active_agents"
         case availableVoices = "available_voices"
+        case voiceEngine = "voice_engine"
+        case kokoroSupported = "kokoro_supported"
+        case kokoroInstalled = "kokoro_installed"
     }
 
     init(from decoder: Decoder) throws {
@@ -46,6 +56,9 @@ struct DaemonSettings: Codable, Sendable {
         self.subtitlesEnabled = try container.decodeIfPresent(Bool.self, forKey: .subtitlesEnabled)
         self.showActiveAgents = try container.decodeIfPresent(Bool.self, forKey: .showActiveAgents)
         self.availableVoices = try container.decodeIfPresent([NativeVoiceClient.VoiceOption].self, forKey: .availableVoices)
+        self.voiceEngine = try container.decodeIfPresent(String.self, forKey: .voiceEngine)
+        self.kokoroSupported = try container.decodeIfPresent(Bool.self, forKey: .kokoroSupported)
+        self.kokoroInstalled = try container.decodeIfPresent(Bool.self, forKey: .kokoroInstalled)
     }
 }
 

@@ -893,13 +893,14 @@ final class PulsarHTTPServer: @unchecked Sendable {
         let text = pickable.randomElement()!
         Self.canonLock.withLock { Self.lastCanonText = text }
 
-        // Synthesise locally via macOS native voice — mirrors the /speak path.
-        // No network, no API key, no spend.
+        // Synthesise locally — mirrors the /speak path. Either engine is fully
+        // on-device: no network, no API key, no spend.
         let entryId = Self.nextEntryId()
+        let engine = VoiceEngine.active.rawValue
         let entry = AudioEntry(
             id: entryId,
             text: String(text.prefix(100)),
-            voiceId: "native",
+            voiceId: engine,
             voiceLabel: "Pulsar",
             createdAt: Date(),
             channel: nil,
@@ -907,7 +908,7 @@ final class PulsarHTTPServer: @unchecked Sendable {
             fullText: text,
             isReplay: false,
             audioURL: nil,
-            engine: "native"
+            engine: engine
         )
 
         guard let position = await audioQueue.enqueue(entry) else {
@@ -918,10 +919,10 @@ final class PulsarHTTPServer: @unchecked Sendable {
         let textCopy = text
         Task.detached {
             do {
-                let url = try await NativeVoiceClient.synth(text: textCopy)
+                let url = try await VoiceEngine.synth(text: textCopy)
                 await audioQueue.markReady(id: idCopy, url: url)
             } catch {
-                NSLog("[PulsarHTTP] canon native synth failed for \(idCopy): \(error)")
+                NSLog("[PulsarHTTP] canon synth failed for \(idCopy): \(error)")
                 await audioQueue.markFailed(id: idCopy)
             }
         }
@@ -1150,7 +1151,7 @@ final class PulsarHTTPServer: @unchecked Sendable {
             rawCategory: agentCategory,
             resolvedCategory: resolvedCategory,
             coerced: agentCategory != nil && agentCategory!.lowercased() != resolvedCategory,
-            voice: NativeVoiceClient.voice(forAgent: agentCategory)
+            voice: VoiceEngine.voice(forAgent: agentCategory)
         )
 
         let idCopy = entryId
@@ -1158,16 +1159,20 @@ final class PulsarHTTPServer: @unchecked Sendable {
         let agentCopy = agentCategory
         Task.detached {
             do {
-                let url = try await NativeVoiceClient.synth(text: textCopy, agent: agentCopy)
+                let url = try await VoiceEngine.synth(text: textCopy, agent: agentCopy)
                 await audioQueue.markReady(id: idCopy, url: url)
             } catch {
-                NSLog("[PulsarHTTP] native synth failed for \(idCopy): \(error)")
+                NSLog("[PulsarHTTP] synth failed for \(idCopy): \(error)")
                 await audioQueue.markFailed(id: idCopy)
             }
         }
+        // Report the engine that will ACTUALLY speak — `VoiceEngine.active`, already
+        // degraded to "native" if Kokoro is selected but unusable. A hardcoded
+        // "native" here made /speak claim the macOS voice while Kokoro was rendering.
+        let engineName = VoiceEngine.active.rawValue
         return try Self.json(SpeakResponse(
-            id: entryId, position: position, voice: "native",
-            text_preview: String(text.prefix(100)), dropped: nil, reason: "native"))
+            id: entryId, position: position, voice: engineName,
+            text_preview: String(text.prefix(100)), dropped: nil, reason: engineName))
     }
 
     // MARK: - JSON helper
@@ -1214,7 +1219,10 @@ final class PulsarHTTPServer: @unchecked Sendable {
             floating_head_enabled: config.floatingHeadEnabled,
             subtitles_enabled: config.subtitlesEnabled,
             show_active_agents: config.showActiveAgents,
-            available_voices: NativeVoiceClient.voiceOptions()
+            available_voices: NativeVoiceClient.voiceOptions(),
+            voice_engine: VoiceEngine.active.rawValue,
+            kokoro_supported: KokoroVoiceClient.isSupported,
+            kokoro_installed: KokoroVoiceClient.isInstalled()
         )
     }
 
@@ -1471,6 +1479,12 @@ private struct SettingsResponse: Encodable, Sendable {
     let subtitles_enabled: Bool
     let show_active_agents: Bool
     let available_voices: [NativeVoiceClient.VoiceOption]
+    /// Which synthesiser is ACTUALLY live (`VoiceEngine.active`, i.e. already
+    /// degraded to "native" if Kokoro is selected but not installed) — so a caller
+    /// never has to infer it from the raw config.
+    let voice_engine: String
+    let kokoro_supported: Bool
+    let kokoro_installed: Bool
 }
 
 private struct SettingsUpdateRequest: Decodable, Sendable {

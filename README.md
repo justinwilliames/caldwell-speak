@@ -40,6 +40,12 @@ If Pulsar earns its spot in your menu bar, a ⭐ helps other people find it.
 
 That's the whole list. The voice runs on macOS's built-in `say` — there's no account to create, no key to paste, and no speech service to reach over the network. (The one connection Pulsar does make is the Sparkle update check; see [Updates](#updates).)
 
+### Optional: a neural voice, still on your machine
+
+If the built-in Mac voices aren't to your taste, Settings offers a second engine: **Kokoro**, a neural synthesiser that runs entirely on your own Mac. It's off by default. Turning it on downloads the model once (~315 MB, straight from Hugging Face); after that it's as local as `say` — no account, no key, and nothing leaves the machine when it speaks.
+
+All nine characters have a Kokoro voice, so the cast survives the switch. Apple Silicon only, and if anything about it fails, Pulsar falls back to `say` for that line rather than going quiet.
+
 ---
 
 ## Meet the swarm

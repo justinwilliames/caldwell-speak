@@ -16,6 +16,12 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 18) {
                 recoveryBanners
                 voiceSection
+                // Apple-Silicon-only: on Intel the whole section is absent, not
+                // greyed out — see KokoroVoiceClient.isSupported.
+                if KokoroVoiceClient.isSupported {
+                    Divider()
+                    kokoroSection
+                }
                 Divider()
                 claudeIntegrationSection
                 Divider()
@@ -30,6 +36,118 @@ struct SettingsView: View {
         .task {
             await viewModel.loadSettings()
         }
+    }
+
+    // MARK: - Kokoro (opt-in on-device neural voice)
+
+    private var kokoro: KokoroModelManager { .shared }
+
+    /// Byte count for the subtitle — the download is large enough that the user
+    /// deserves the number before they tap, and again after, on disk.
+    private func mb(_ bytes: Int64) -> String {
+        String(format: "%.0f MB", Double(bytes) / 1_000_000)
+    }
+
+    @ViewBuilder
+    private var kokoroSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("NEURAL VOICE")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .tracking(0.5)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Kokoro — on-device")
+                    .font(.caption.weight(.medium))
+                Text("A neural voice that runs entirely on this Mac. Nothing is sent anywhere. "
+                     + "One 315 MB download; macOS voices keep working either way.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            switch kokoro.phase {
+            case .notInstalled:
+                Button { kokoro.download() } label: {
+                    Label("Download Kokoro (315 MB)", systemImage: "arrow.down.circle")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+            case .downloading(let fraction):
+                VStack(alignment: .leading, spacing: 6) {
+                    ProgressView(value: fraction)
+                        .progressViewStyle(.linear)
+                        .controlSize(.small)
+                    HStack(spacing: 8) {
+                        Text("Downloading… \(Int(fraction * 100))%")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                        Spacer(minLength: 0)
+                        Button("Cancel") { kokoro.cancel() }
+                            .buttonStyle(.borderless)
+                            .controlSize(.small)
+                    }
+                }
+
+            case .installed:
+                HStack(alignment: .top, spacing: 10) {
+                    Toggle("", isOn: kokoroEnabledBinding)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Use Kokoro")
+                            .font(.caption.weight(.medium))
+                        Text(kokoro.installedSize().map { "Installed — \(mb($0)) on disk." }
+                             ?? "Installed.")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                    Spacer(minLength: 0)
+                }
+
+                Button(role: .destructive) { kokoro.delete() } label: {
+                    Label("Remove download", systemImage: "trash")
+                }
+                .buttonStyle(.borderless)
+                .controlSize(.small)
+
+            case .failed(let message):
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(message)
+                        .font(.caption2)
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button { kokoro.download() } label: {
+                        Label("Try again", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+        }
+        // Re-derive from disk each time Settings opens: a download may have finished
+        // in a previous launch, or the folder may have been deleted by hand.
+        .onAppear { kokoro.refresh() }
+    }
+
+    /// Engine switch. Writes the config directly rather than going through the
+    /// daemon's /settings PATCH — the model lives on this side of the process and
+    /// the toggle must also warm/unload it, which the HTTP surface knows nothing about.
+    private var kokoroEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { VoiceEngine.selected == .kokoro },
+            set: { on in
+                try? PulsarConfig.shared.set(PulsarConfig.voiceEngineKey,
+                                             value: (on ? VoiceEngine.kokoro : .native).rawValue)
+                PulsarConfig.shared.reload()
+                // Loading ~315MB takes seconds; do it on the switch, not on the
+                // first line, or the first thing the user hears is a long silence.
+                if on { KokoroVoiceClient.warm() } else { KokoroVoiceClient.unload() }
+            }
+        )
     }
 
     // MARK: - Claude Code integration (one-click installer)

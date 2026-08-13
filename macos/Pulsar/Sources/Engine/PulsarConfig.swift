@@ -104,6 +104,49 @@ final class PulsarConfig: @unchecked Sendable {
             ?? "").trimmingCharacters(in: .whitespaces)
     }
 
+    /// Config key for the synthesiser choice. Named here so KokoroModelManager can
+    /// reset it without duplicating the string.
+    static let voiceEngineKey = "PULSAR_VOICE_ENGINE"
+
+    /// Which synthesiser the user picked, as a raw string ("native" / "kokoro").
+    /// Empty when unset, which callers must read as "native" — a fresh install has
+    /// to speak with no download, so Kokoro is never the default.
+    ///
+    /// Deliberately a String rather than the `VoiceEngine` enum: `scripts/run-tests.sh`
+    /// compiles this file standalone with `swiftc` (no SwiftPM, no Kokoro module),
+    /// so a type dependency here would drag the whole MLX graph into the test
+    /// harness and break it. `VoiceEngine.active` does the parsing, and also checks
+    /// the model is actually on disk before honouring "kokoro".
+    var voiceEngineRaw: String {
+        (lock.withLock { _config[Self.voiceEngineKey] }
+            ?? ProcessInfo.processInfo.environment[Self.voiceEngineKey]
+            ?? "").trimmingCharacters(in: .whitespaces).lowercased()
+    }
+
+    /// Sentence gap for the Kokoro path, in milliseconds. Kokoro renders a line as
+    /// one continuous utterance, so a full stop barely registers; KokoroVoiceClient
+    /// splits on sentence boundaries and inserts this much silence between them.
+    /// 320ms chosen by ear (Justin, 13 Aug 2026) — enough to land each sentence
+    /// without sounding like it is buffering. 0 disables splitting entirely.
+    var kokoroSentenceGapMs: Int {
+        guard let raw = lock.withLock({ _config["PULSAR_KOKORO_GAP_MS"] }),
+              let v = Int(raw.trimmingCharacters(in: .whitespaces)), v >= 0, v <= 2000
+        else { return 320 }
+        return v
+    }
+
+    /// Enforced quiet period between Kokoro syntheses, in milliseconds. Stops a
+    /// burst of queued lines (a nine-drone roll call) from running GPU work
+    /// back-to-back with no chance for memory to be returned in between. 350ms by
+    /// default; playback of a single line is seconds long, so synthesis still runs
+    /// well ahead of the speaker and the delay is not normally audible. 0 disables.
+    var kokoroCooldownMs: Int {
+        guard let raw = lock.withLock({ _config["PULSAR_KOKORO_COOLDOWN_MS"] }),
+              let v = Int(raw.trimmingCharacters(in: .whitespaces)), v >= 0, v <= 5000
+        else { return 350 }
+        return v
+    }
+
     /// Whether the cached "canon" fallback is allowed — the Stop hook's
     /// turn-end floor for turns the model didn't compose a bespoke line on.
     /// Off = bespoke-only: only the model's freshly composed lines speak (the
