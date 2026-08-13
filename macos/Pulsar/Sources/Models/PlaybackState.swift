@@ -19,6 +19,12 @@ final class PlaybackState {
     /// Drone category attributed to the currently-speaking line (e.g. "voyager").
     /// nil = the main Pulsar head is speaking.
     var currentAgentCategory: String?
+    /// Human-readable name of the Claude Code session the current line is spoken
+    /// from, and the id that reopens it. Both survive the idle event for the same
+    /// reason `currentAgentCategory` does — the speaker (and its attribution) has
+    /// to stay rendered through the linger/fade. Replaced by the next line.
+    var sessionName: String?
+    var sessionRef: String?
 
     var globalPaused = false
     var channelPaused: [String] = []
@@ -59,6 +65,8 @@ final class PlaybackState {
             chunkMs = data.chunkMs ?? 50
             channel = data.channel
             currentAgentCategory = data.agent
+            sessionName = data.session
+            sessionRef = data.sessionRef
             startTimer()
         }
         queuedCount = data.queued ?? 0
@@ -106,13 +114,16 @@ struct VoiceActiveEvent: Codable {
     let channel: String?
     let priority: Bool?
     let agent: String?
+    let session: String?
+    let sessionRef: String?
 
     enum CodingKeys: String, CodingKey {
         case id, voice, type, text, duration
         case totalDuration = "total_duration"
         case offset, segments, envelope
         case chunkMs = "chunk_ms"
-        case queued, channel, priority, agent
+        case queued, channel, priority, agent, session
+        case sessionRef = "session_ref"
     }
 }
 

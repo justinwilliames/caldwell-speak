@@ -399,7 +399,10 @@ final class PulsarHTTPServer: @unchecked Sendable {
             priority: false,
             fullText: item.text,
             isReplay: true,
-            audioURL: tmpURL
+            audioURL: tmpURL,
+            // A replay is the SAME line, so it keeps the session it came from.
+            sessionName: item.session,
+            sessionRef: item.sessionRef
         )
 
         let position = await audioQueue.enqueue(entry)
@@ -855,12 +858,18 @@ final class PulsarHTTPServer: @unchecked Sendable {
         audioQueue: AudioQueueActor
     ) async throws -> Response {
         // Parse optional body — context defaults to "neutral" (union of all).
+        // The Stop hook also passes session attribution, so the turn-end ping is
+        // credited to (and clickable through to) the session that produced it.
         var requestedContext = "neutral"
+        var sessionName: String?
+        var sessionRef: String?
         if let bodyData = try? await request.body.collect(upTo: 64 * 1024),
-           let body = try? JSONSerialization.jsonObject(with: Data(buffer: bodyData)) as? [String: Any],
-           let ctx = body["context"] as? String,
-           !ctx.isEmpty {
-            requestedContext = ctx.lowercased()
+           let body = try? JSONSerialization.jsonObject(with: Data(buffer: bodyData)) as? [String: Any] {
+            if let ctx = body["context"] as? String, !ctx.isEmpty {
+                requestedContext = ctx.lowercased()
+            }
+            sessionName = Self.sanitizedSessionName(body["session"])
+            sessionRef  = Self.sanitizedSessionRef(body["session_ref"])
         }
 
         let cfg = PulsarConfig.shared
@@ -908,7 +917,9 @@ final class PulsarHTTPServer: @unchecked Sendable {
             fullText: text,
             isReplay: false,
             audioURL: nil,
-            engine: engine
+            engine: engine,
+            sessionName: sessionName,
+            sessionRef: sessionRef
         )
 
         guard let position = await audioQueue.enqueue(entry) else {
@@ -1098,6 +1109,11 @@ final class PulsarHTTPServer: @unchecked Sendable {
         let speakSessionId = (body["session_id"] as? String).flatMap {
             $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0
         }
+        // Session ATTRIBUTION (distinct from the id above, which only scopes the
+        // claim): the human-readable name shown under the speaker, and the ref
+        // that reopens that session when the speaker is clicked.
+        let sessionName = Self.sanitizedSessionName(body["session"])
+        let sessionRef  = Self.sanitizedSessionRef(body["session_ref"])
         // Claim-on-speak: a sub-agent reveals its true character only by speaking
         // with `--agent X`, because the SubagentStart hook carries no task text and
         // registers every generic worker as an atlas. So when a tagged line comes
@@ -1133,7 +1149,8 @@ final class PulsarHTTPServer: @unchecked Sendable {
             id: entryId, text: String(text.prefix(100)), voiceId: "native",
             voiceLabel: speakerLabel, createdAt: Date(), channel: channel,
             priority: priority, fullText: text, isReplay: false,
-            audioURL: nil, engine: "native", agentCategory: agentCategory)
+            audioURL: nil, engine: "native", agentCategory: agentCategory,
+            sessionName: sessionName, sessionRef: sessionRef)
         guard let position = await audioQueue.enqueue(entry) else {
             return try Self.json(SpeakResponse(
                 id: entryId, position: nil, voice: "native",
@@ -1224,6 +1241,28 @@ final class PulsarHTTPServer: @unchecked Sendable {
             kokoro_supported: KokoroVoiceClient.isSupported,
             kokoro_installed: KokoroVoiceClient.isInstalled()
         )
+    }
+
+    /// Display name of the speaking session, trimmed and length-capped. It is
+    /// rendered as a pill under the speaker, so a runaway title can't grow the
+    /// floating panel — 80 chars is already far past what the pill shows.
+    nonisolated private static func sanitizedSessionName(_ raw: Any?) -> String? {
+        guard let s = (raw as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !s.isEmpty else { return nil }
+        return String(s.prefix(80))
+    }
+
+    /// The session ref, accepted ONLY as a bare id. It goes straight into a
+    /// `claude://resume?session=…` URL that the app opens, so anything that
+    /// isn't [A-Za-z0-9_-] (a path, a scheme, a query) is rejected rather than
+    /// escaped — a speak body is not a trusted source of URLs.
+    nonisolated private static func sanitizedSessionRef(_ raw: Any?) -> String? {
+        guard let s = (raw as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !s.isEmpty else { return nil }
+        guard s.count <= 64,
+              s.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-" || $0 == "_") })
+        else { return nil }
+        return s
     }
 
     nonisolated private static func nextEntryId() -> String {

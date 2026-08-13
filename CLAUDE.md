@@ -52,6 +52,25 @@ Seven characters with fixed voices:
 | echo      | Writer       | Tessa (en-ZA)  |
 | atlas     | Generalist   | Rishi (en-IN)  |
 
+## Session Attribution
+
+Every spoken line carries the session it came from. `say.sh` resolves it with no
+caller involvement (override with `--session NAME` / `--session-ref ID`):
+
+- **Name** — `$CLAUDE_JOB_DIR/state.json` → the desktop app's own session record
+  (`~/Library/Application Support/Claude/claude-code-sessions/*/*/local_<host-id>.json`,
+  where the title lives when Claude Code runs inside the desktop app) → the last
+  `aiTitle`/`agentName` record in the CLI transcript.
+- **Ref** — `CLAUDE_CODE_HOST_SESSION_ID` minus its `local_` prefix, else
+  `CLAUDE_CODE_SESSION_ID`.
+
+The daemon carries both through the queue into `voice_active`, `/queue` and
+`/history`. The floating panel shows the name as a plate on the speaker's lower
+edge, and clicking the speaking head (or the plate) opens
+`claude://resume?session=<ref>` — the desktop app's own deep link, which focuses
+an already-open session rather than importing a second copy. Sub-agents inherit
+the env, so a drone attributes to — and clicks through to — its parent session.
+
 ## Sub-agent Drone Swarm
 
 When Claude Code spawns sub-agents, each in-flight agent renders as a colour-coded drone orbiting Pulsar in the UI. Wired via Claude Code hooks:

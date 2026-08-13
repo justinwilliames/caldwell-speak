@@ -172,6 +172,13 @@ struct AudioEntry: Sendable {
     /// = the main Pulsar head speaks; a drone category makes that drone the
     /// active speaker for the line's duration.
     var agentCategory: String?
+    /// Human-readable name of the Claude Code session this line was spoken from
+    /// (say.sh resolves it). nil when the caller couldn't resolve one.
+    var sessionName: String?
+    /// The id that reopens that session — `claude://resume?session=<ref>`. Kept
+    /// separate from the display name because the name is renameable and the ref
+    /// is what actually addresses the session.
+    var sessionRef: String?
     /// When this entry entered the queue. Drives the staleness purge so a line
     /// that has waited too long behind a backed-up queue is dropped rather than
     /// blocking newer lines. Set at enqueue time.
@@ -190,6 +197,10 @@ struct HistoryItem: Sendable {
     /// measurable from /history — before this, voice was a hardcoded label and
     /// speaker attribution was impossible (2026-07-06 voice audit §2).
     let agent: String?
+    /// Session the line was spoken from — display name and reopen-ref. Carried
+    /// through history so a replayed line still knows where it came from.
+    let session: String?
+    let sessionRef: String?
 }
 
 struct QueueStatusSnapshot: Encodable, Sendable {
@@ -223,6 +234,8 @@ struct QueueStatusSnapshotItem: Encodable, Sendable {
     /// Drone category for the line (nil = Pulsar), so a pending thumbnail renders
     /// the right face. `voice` is a hardcoded "Pulsar" label and can't carry it.
     let agent: String?
+    /// Session name the queued line will speak from (nil = unattributed).
+    let session: String?
 }
 
 struct QueueStatusHistorySnapshot: Encodable, Sendable {
@@ -234,6 +247,8 @@ struct QueueStatusHistorySnapshot: Encodable, Sendable {
     let duration: Double?
     let type: String
     let failed: Bool
+    /// Session name the line was spoken from (nil = unattributed).
+    let session: String?
 }
 
 /// Single-resume guard for a process-wait continuation. `Process.termination-
@@ -1001,7 +1016,8 @@ actor AudioQueueActor {
                 text: currentEntry.text,
                 channel: currentEntry.channel,
                 priority: currentEntry.priority,
-                agent: currentEntry.agentCategory
+                agent: currentEntry.agentCategory,
+                session: currentEntry.sessionName
             ))
         }
 
@@ -1018,7 +1034,8 @@ actor AudioQueueActor {
                 text: entry.text,
                 channel: entry.channel,
                 priority: entry.priority,
-                agent: entry.agentCategory
+                agent: entry.agentCategory,
+                session: entry.sessionName
             ))
         }
 
@@ -1031,7 +1048,8 @@ actor AudioQueueActor {
                 timestamp: $0.timestamp.timeIntervalSince1970,
                 duration: $0.duration,
                 type: "speak",
-                failed: $0.failed
+                failed: $0.failed,
+                session: $0.session
             )
         }
 
@@ -1327,6 +1345,11 @@ actor AudioQueueActor {
             "channel": entry.channel as Any,
             "priority": entry.priority,
             "agent": entry.agentCategory as Any,
+            // WHICH session this line is speaking from, and the ref that reopens
+            // it. The floating panel renders the name under the speaker and uses
+            // the ref for click-to-open.
+            "session": entry.sessionName as Any,
+            "session_ref": entry.sessionRef as Any,
         ]
         await broadcaster.broadcast(event: "voice_active", json: jsonString(startDict))
 
@@ -1465,6 +1488,8 @@ actor AudioQueueActor {
             "type": type,
             "failed": item.failed,
             "agent": item.agent as Any,
+            "session": item.session as Any,
+            "session_ref": item.sessionRef as Any,
         ]
     }
 
@@ -1475,7 +1500,8 @@ actor AudioQueueActor {
             text: entry.fullText.isEmpty ? entry.text : entry.fullText,
             channel: entry.channel, timestamp: entry.createdAt,
             duration: duration, failed: failed,
-            agent: entry.agentCategory
+            agent: entry.agentCategory,
+            session: entry.sessionName, sessionRef: entry.sessionRef
         )
         history.append(item)
         if history.count > maxHistory {

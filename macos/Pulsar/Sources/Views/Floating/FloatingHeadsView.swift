@@ -160,13 +160,30 @@ struct FloatingHeadsView: View {
                         orbitOffset: slotOffset(index: p.orbitIndex, total: orbitSlotCount),
                         thumbnailSize: thumbnailSize,
                         reduceMotion: reduceMotion,
-                        portraitManager: viewModel.portraitManager
+                        portraitManager: viewModel.portraitManager,
+                        // Clicking the speaker goes to the session it's speaking
+                        // from. Only wired for the centre occupant, and only when
+                        // that session is actually addressable.
+                        openSession: sessionRef.map { ref in { SessionLink.open(ref) } },
+                        sessionName: sessionName
                     )
                     .id(p.id)
                     .zIndex(p.isCentre ? 20 : Double(7 - p.orbitIndex))
                 }
+
+                // WHICH session is talking. Sits on the speaker's lower edge like
+                // a nameplate — inside the 120pt squircle, so it never collides
+                // with the caption bubble that attaches just below it. Only shown
+                // while someone actually holds the centre.
+                if speaker != nil, let session = sessionName {
+                    sessionNameplate(session)
+                        .offset(y: 50)
+                        .zIndex(30)
+                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                }
             }
         }
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: sessionName)
         .frame(width: Self.headZoneWidth, height: Self.headZoneHeight)
         // [FIX 3 — Reduce Motion] All slot-glide springs are gated on
         // `reduceMotion`. When on, animations are nil (instant snap) so
@@ -185,6 +202,63 @@ struct FloatingHeadsView: View {
         // centre (presence); departing Pulsar eases out slower. Both keyed on
         // who holds the centre so they animate as a matched trade.
         .animation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.62), value: activeDroneCategory)
+    }
+
+    // MARK: - Session attribution
+
+    /// Name of the session the current-or-lingering line is spoken from. Empty
+    /// resolves to nil so an unattributed line shows no plate rather than a blank.
+    private var sessionName: String? {
+        guard let name = viewModel.playback.sessionName?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else { return nil }
+        return name
+    }
+
+    /// The id that reopens that session, or nil when there's nothing to open —
+    /// which is also what gates the click, so the plate is never a dead button.
+    private var sessionRef: String? {
+        let ref = viewModel.playback.sessionRef
+        return SessionLink.canOpen(ref) ? ref : nil
+    }
+
+    /// The speaker's nameplate: which session this voice is coming from, and —
+    /// when the session is addressable — a click that takes you there.
+    @ViewBuilder
+    private func sessionNameplate(_ name: String) -> some View {
+        let tint = droneColor(for: captionCategory)
+        let plate = HStack(spacing: 3) {
+            if sessionRef != nil {
+                Image(systemName: "arrow.up.forward.app.fill")
+                    .font(.system(size: 7, weight: .bold))
+            }
+            Text(name)
+                .font(.system(size: 9, weight: .semibold))
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+        .foregroundStyle(.white.opacity(0.95))
+        .padding(.horizontal, 7)
+        .padding(.vertical, 2)
+        .frame(maxWidth: Self.headZoneWidth - 60)
+        .fixedSize(horizontal: true, vertical: false)
+        .background(.black.opacity(0.55), in: Capsule())
+        .overlay(Capsule().strokeBorder(tint.opacity(0.55), lineWidth: 0.75))
+        .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
+
+        if let ref = sessionRef {
+            // A Button (not a bare tap gesture): the panel is
+            // `isMovableByWindowBackground`, so a plain hit-test region would be
+            // swallowed by the window drag. AppKit lets control views take the
+            // mouseDown instead of starting a drag.
+            Button { SessionLink.open(ref) } label: { plate }
+                .buttonStyle(.plain)
+                .onHover { inside in
+                    if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                }
+                .help("Open the “\(name)” session in Claude Code")
+        } else {
+            plate.help("Speaking from “\(name)”")
+        }
     }
 
     // NOTE: rendering of each participant now lives in `ParticipantSlotView`
@@ -604,6 +678,11 @@ private struct ParticipantSlotView: View {
     let thumbnailSize: CGFloat
     let reduceMotion: Bool
     let portraitManager: PortraitManager
+    /// Opens the session the CENTRE speaker is speaking from. nil when there's no
+    /// addressable session — the portrait is then inert, as before.
+    var openSession: (() -> Void)?
+    /// That session's display name, for the portrait's tooltip.
+    var sessionName: String?
 
     /// Full centre portrait size (matches FloatingPortraitView.portraitSize).
     private let centrePortraitSize: CGFloat = 120
@@ -633,7 +712,7 @@ private struct ParticipantSlotView: View {
             // fallback, which is wrong even at opacity-0 (it leaks through the
             // crossfade).
             if isCentre {
-                FloatingPortraitView(
+                let portrait = FloatingPortraitView(
                     voiceName: speaker?.voiceLabel ?? (participant.category?.capitalized ?? "Pulsar"),
                     amplitude: speaker?.amplitude ?? 0,
                     voiceColor: participant.color,
@@ -642,6 +721,23 @@ private struct ParticipantSlotView: View {
                     glowColor: participant.color
                 )
                 .allowsHitTesting(true)
+
+                Group {
+                    if let openSession {
+                        // Click the talking head → its session. A Button rather
+                        // than a tap gesture so the panel's move-by-background
+                        // doesn't swallow the mouseDown.
+                        Button(action: openSession) { portrait }
+                            .buttonStyle(.plain)
+                            .onHover { inside in
+                                if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                            }
+                            .help(sessionName.map { "Open the “\($0)” session in Claude Code" }
+                                  ?? "Open this session in Claude Code")
+                    } else {
+                        portrait
+                    }
+                }
                 // Explicit opacity transition so the portrait fades in/out cleanly
                 // as a participant enters/leaves the centre, matching the thumbnail
                 // fade on the orbit layer below.

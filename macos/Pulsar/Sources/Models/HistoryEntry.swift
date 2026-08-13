@@ -5,6 +5,9 @@ struct HistoryEntry: Codable, Identifiable {
     let voice: String
     let text: String
     let channel: String?
+    /// Name of the session the line was spoken from (nil = unattributed, e.g.
+    /// entries written before session attribution existed).
+    let session: String?
     let timestamp: Double
     let duration: Double?
     let type: String
@@ -17,6 +20,7 @@ struct HistoryEntry: Codable, Identifiable {
         case voice
         case text
         case channel
+        case session
         case timestamp
         case duration
         case type
@@ -29,6 +33,7 @@ struct HistoryEntry: Codable, Identifiable {
         self.voice = try container.decode(String.self, forKey: .voice)
         self.text = try container.decode(String.self, forKey: .text)
         self.channel = try container.decodeIfPresent(String.self, forKey: .channel)
+        self.session = try container.decodeIfPresent(String.self, forKey: .session)
         self.timestamp = try container.decode(Double.self, forKey: .timestamp)
         self.duration = try container.decodeIfPresent(Double.self, forKey: .duration)
         self.type = try container.decodeIfPresent(String.self, forKey: .type) ?? "speak"
