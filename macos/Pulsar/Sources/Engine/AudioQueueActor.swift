@@ -945,6 +945,26 @@ actor AudioQueueActor {
         currentProcess?.terminate()
     }
 
+    /// Stop speaking NOW and discard everything waiting.
+    ///
+    /// Distinct from mute, which is a PAUSE — muted lines are held and play on
+    /// unmute. This is the "shut up" control, and it had no route at all: /stop,
+    /// /skip, /flush, /clear and /cancel were all 404, so once a long line or a
+    /// backlog was in flight there was no way to interrupt it short of killing the
+    /// app. Returns how many were dropped so the caller can say what happened.
+    @discardableResult
+    func stopAndClear() -> Int {
+        let dropped = queue.count
+        queue.removeAll()
+        currentProcess?.terminate()
+        for (id, cont) in readyContinuations {
+            cont.resume()
+            readyContinuations.removeValue(forKey: id)
+        }
+        NSLog("[AudioQueue] ⏹ stop — current line killed, \(dropped) queued line(s) dropped")
+        return dropped
+    }
+
     /// Immediate mute: terminate the currently-playing audio process (afplay or
     /// the `say` fallback) RIGHT NOW so a mid-line mute goes quiet within a
     /// fraction of a second, and drop every still-queued waiter so nothing else

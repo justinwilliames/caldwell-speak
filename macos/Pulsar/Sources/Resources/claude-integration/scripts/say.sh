@@ -79,6 +79,7 @@ while [[ $# -gt 0 ]]; do
     --cacheable)     CACHEABLE=true; shift ;;
     --canon)         ACTION="canon"; CANON_CONTEXT="$2"; shift 2 ;;
     --status)        ACTION="status"; shift ;;
+    --stop)         ACTION="stop"; shift ;;
     --skip)          ACTION="skip"; shift ;;
     --clear)         ACTION="clear"; shift ;;
     --pause)         ACTION="pause"; shift ;;
@@ -281,7 +282,7 @@ print(json.dumps(d))
     ;;
   speak)
     [[ -z "$TEXT" ]] && {
-      echo "Usage: say.sh \"text\" [--voice NAME] [--channel CH] [--agent DRONE] [--session NAME] [--session-ref ID] [--priority] [--cacheable]" >&2
+      echo "Usage: say.sh \"text\" [--voice NAME] [--channel CH] [--agent DRONE] [--session NAME] [--session-ref ID] [--priority] [--cacheable] | --stop" >&2
       echo "       say.sh --status | --skip | --clear | --pause | --resume" >&2
       echo "       say.sh --history [--limit N] | --replay ID" >&2
       echo "       say.sh --usage | --settings" >&2

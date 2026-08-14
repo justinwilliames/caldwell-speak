@@ -241,6 +241,24 @@ struct FloatingHeadsView: View {
                 // of speech. Sits on the speaker's lower edge like a nameplate,
                 // inside the 120pt squircle, so it never collides with the caption
                 // bubble that attaches just below it.
+                // WHO is talking. Always visible while someone speaks, because the
+                // panel's whole job is telling you which drone has the floor — and
+                // it was doing that with COLOUR ALONE. Nova called it: nothing in
+                // the floating panel ever displayed a name. That also fails anyone
+                // who cannot separate ten hues at 62pt, which is the same reason
+                // the roster's role labels needed contrast-correcting.
+                //
+                // The session plate (on hover) answers a different question — WHERE
+                // the line came from — so when both are up the name yields the
+                // lower slot to it.
+                if speaker != nil {
+                    droneNameplate(speakerDisplayName)
+                        .offset(y: showSessionPlate && sessionName != nil ? 28 : 50)
+                        .zIndex(29)
+                        .animation(reduceMotion ? nil : .easeOut(duration: 0.18),
+                                   value: showSessionPlate)
+                }
+
                 if speaker != nil, let session = sessionName, showSessionPlate {
                     sessionNameplate(session)
                         .offset(y: 50)
@@ -304,6 +322,31 @@ struct FloatingHeadsView: View {
     private var sessionRef: String? {
         let ref = viewModel.playback.sessionRef
         return SessionLink.canOpen(ref) ? ref : nil
+    }
+
+    /// The speaking drone's display name — "Pulsar", "Sentinel", "Vector".
+    private var speakerDisplayName: String {
+        let c = activeDroneCategory ?? "pulsar"
+        return c.prefix(1).uppercased() + c.dropFirst()
+    }
+
+    /// The drone nameplate. Deliberately plainer than the session plate: this is
+    /// an identity label, not an action.
+    @ViewBuilder
+    private func droneNameplate(_ name: String) -> some View {
+        Text(name.uppercased())
+            .font(.system(size: 9.5, weight: .bold, design: .rounded))
+            .tracking(1.1)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(
+                Capsule().fill(.black.opacity(0.55))
+                    .overlay(Capsule().strokeBorder(droneColor(for: activeDroneCategory)
+                                                        .opacity(0.9), lineWidth: 1))
+            )
+            .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
+            .fixedSize()
     }
 
     /// The speaker's nameplate: which session this voice is coming from, and —

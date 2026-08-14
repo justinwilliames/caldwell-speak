@@ -276,6 +276,15 @@ final class PulsarHTTPServer: @unchecked Sendable {
 
         // GET /queue — current queue snapshot. Hook uses this to detect
         // in-flight plays before deciding whether to fire its own ping.
+        // POST /stop — shut up now. Kills the line being spoken and discards the
+        // backlog. Deliberately separate from mute, which HOLDS lines for later.
+        router.post("/stop") { _, _ -> Response in
+            let dropped = await audioQueue.stopAndClear()
+            await sseBroadcaster.broadcast(event: "queue_update", json: "{}")
+            struct StopResponse: ResponseEncodable { let stopped: Bool; let dropped: Int }
+            return try Self.json(StopResponse(stopped: true, dropped: dropped))
+        }
+
         router.get("/queue") { request, _ -> Response in
             return try await Self.handleQueue(request: request, audioQueue: audioQueue)
         }
