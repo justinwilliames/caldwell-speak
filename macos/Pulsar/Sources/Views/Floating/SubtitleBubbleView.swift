@@ -34,6 +34,27 @@ struct SubtitleBubbleView: View {
     /// Rim-glow tint. Defaults to Pulsar indigo (`.orbitLight`); the active
     /// drone's colour themes the rim when a sub-agent owns the line.
     var activeColor: Color = .orbitLight
+    /// Who is speaking. Rendered as an eyebrow INSIDE the bubble, so the name and
+    /// the words are one object — a separate plate under the chin competed with
+    /// the caption for the same strip of screen and read as two labels about two
+    /// different things.
+    var speakerName: String? = nil
+    /// The speaker's job title, shown beside the name. Identity is who AND what —
+    /// "Meridian" alone means nothing to anyone who has not memorised the cast.
+    var speakerRole: String? = nil
+
+    /// The bubble's effective fill: the dark base blended with the 30% speaker
+    /// wash that sits on top of it. Approximated rather than sampled because the
+    /// real fill is a gradient — this takes the LIGHTER end, so the correction is
+    /// judged against the hardest case rather than the friendliest.
+    private var bubbleFillApprox: NSColor {
+        let base = NSColor(srgbRed: 0.14, green: 0.14, blue: 0.26, alpha: 1)
+        guard let acc = NSColor(activeColor).usingColorSpace(.sRGB) else { return base }
+        return NSColor(srgbRed: base.redComponent * 0.7 + acc.redComponent * 0.3,
+                       green: base.greenComponent * 0.7 + acc.greenComponent * 0.3,
+                       blue: base.blueComponent * 0.7 + acc.blueComponent * 0.3,
+                       alpha: 1)
+    }
 
     /// Bubble box max width. Widened so a long line wraps into a SHORT, readable
     /// block instead of a tall narrow column (which stacked ~13 lines and ran off
@@ -102,7 +123,35 @@ struct SubtitleBubbleView: View {
     /// Placement direction is locked upstream from the full text, so growing here
     /// never causes an above/below flip.
     private func content(_ revealed: String) -> some View {
-        captionText(revealed)
+        VStack(alignment: .leading, spacing: 3) {
+            if let speakerName {
+                HStack(spacing: 5) {
+                    Text(speakerName.uppercased())
+                        .font(.system(size: 9, weight: .heavy, design: .rounded))
+                        .tracking(1.2)
+                        // Contrast-corrected, not raw. The accent is chosen to be
+                        // distinct against BLACK portraits; the bubble is a dark
+                        // base plus a 30% wash of that same accent, so a dark
+                        // drone colour lands on a background made of itself.
+                        // Measured against that fill: Meridian 1.96:1, Pulsar
+                        // 2.29, Atlas 2.77 — all under the 3:1 floor, and those
+                        // are exactly the three that were hard to read.
+                        .foregroundStyle(activeColor.legible(on: bubbleFillApprox, target: 4.5))
+                    if let speakerRole {
+                        Text("·").font(.system(size: 9, weight: .heavy))
+                            .foregroundStyle(.white.opacity(0.35))
+                        Text(speakerRole.uppercased())
+                            .font(.system(size: 9, weight: .semibold, design: .rounded))
+                            .tracking(0.9)
+                            // Quieter than the name: the role is context, not the
+                            // headline, and two elements at equal weight fight.
+                            .foregroundStyle(.white.opacity(0.62))
+                            .lineLimit(1)
+                    }
+                }
+            }
+            captionText(revealed)
+        }
             .padding(.horizontal, 14)
             .padding(.vertical, 9)
             .padding(tailEdge == .top ? .top : .bottom, tailHeight)  // room for the tail

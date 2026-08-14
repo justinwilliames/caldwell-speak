@@ -110,7 +110,9 @@ WHAT MUST BE IDENTICAL IN ALL TWELVE CELLS — this is the whole point of the sh
   - the head is in EXACTLY the same position, at exactly the same size and angle
   - identical framing and crop within each cell, AND THE SAME CROP AS THE REFERENCE
     IMAGE: head AND SHOULDERS, with the upper chest and shoulders filling the bottom
-    of every cell exactly as they do in the picture you were given. Do not tighten in
+    of every cell exactly as they do in the picture you were given, AND CLEAR EMPTY
+    SPACE ABOVE THE TOP OF THE HEAD in every cell — the crown, the hair and any
+    headgear must be fully inside the frame and must never touch the top edge. Do not tighten in
     to a head-only portrait and do not leave the body out — a floating head is a
     failure, however good the face is
   - identical lighting, identical key and rim, identical background
@@ -239,7 +241,12 @@ def register(ref, img):
 # Where a face must sit inside a frame asset, as fractions of the tile.
 FRAME_CX = 0.500      # dead centre horizontally — Justin: "faces should be centred"
 FRAME_CY = 0.470      # anchor centroid a little above middle
-FRAME_RADIUS = 0.115  # anchor radius as a fraction of tile width
+FRAME_RADIUS = 0.101  # anchor radius as a fraction of tile width.
+                      # Was 0.115, which is 14% tighter than the character Justin
+                      # named as the reference: Voyager measures 0.1011 with 7.7%
+                      # clear above his crown. At 0.115 four characters (Nova,
+                      # Pulsar, Iris, Vector) had their crowns clipped flat against
+                      # the top edge — measured crown clearance 0.0%.
 
 
 def normalise_set(frames):
@@ -446,6 +453,18 @@ def verify(name, directory=None):
     if body < 45.0:
         notes.append(f"body missing: bottom row only {body:.0f}% subject (need 45%) — "
                      f"the sheet cropped the shoulders off")
+
+    # 2d. the CROWN must be in frame. Rescaling cannot rescue this — if the sheet
+    #     cut the top of the head off, shrinking the tile just smears a head that
+    #     is already missing. Four characters shipped with their crowns flat
+    #     against the top edge (0.0% clearance) against Voyager's 7.7%.
+    gc = cv2.cvtColor(imgs[0], cv2.COLOR_BGR2GRAY)
+    cb = gc[:, int(gc.shape[1] * 0.25):int(gc.shape[1] * 0.75)] > 38
+    rows = np.nonzero(cb.sum(axis=1) > cb.shape[1] * 0.02)[0]
+    crown = (rows[0] / h * 100) if len(rows) else 0.0
+    if crown < 2.0:
+        notes.append(f"crown clipped: only {crown:.1f}% clear above the head (need 2%) — "
+                     f"the sheet cropped the top of the head")
 
     # 3. the blink must leave the MOUTH exactly where mouth-0 has it.
     #    The blink is crossfaded over whatever mouth frame is showing, so a blink
