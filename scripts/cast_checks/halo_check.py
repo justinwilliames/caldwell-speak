@@ -30,9 +30,16 @@ luminance is checked separately — the far corners must actually be black, beca
 a glow that reaches the frame edge is a wash, not a halo.
 
 THRESHOLD PROVENANCE.
-  Saturation band 90-210. The cast's own middle six sit 151-192, which is the look
-  that was signed off; 90 excludes the three washed-out units without being so
-  tight that ordinary variation trips it, and 210 stops a saturated flood.
+  Saturation band 75-225, loosened from 90-210 on Justin's call (2026-08-14): "it
+  doesn't need to be absolutely perfect, just to the point where it's visibly the
+  same theme." The cast's middle six sit 151-192. 75 keeps Vector's 82 — a genuine
+  near-miss that reads correctly on screen — while still catching Voyager at 54 and
+  Meridian at 61, which are a third of the cast's typical glow and visibly unlit.
+  225 leaves room at the top for the same reason.
+
+  The HUE tolerance was deliberately NOT loosened. A glow 136 degrees off its own
+  locked colour (Iris) is not slightly out of theme, it is the wrong colour, and
+  loosening the band to admit it would defeat the only thing this check is for.
   Hue error 25 degrees, matching `hue_fid`'s tolerance for the lit elements — the
   background spill is the same colour claim as the irises and should be held to
   the same standard.
@@ -47,7 +54,7 @@ import numpy as np
 
 NAME = "halo"
 
-SAT_MIN, SAT_MAX = 90.0, 210.0
+SAT_MIN, SAT_MAX = 75.0, 225.0
 HUE_TOL = 25.0
 CORNER_MAX = 18.0
 SUBJECT_LUMA = 28

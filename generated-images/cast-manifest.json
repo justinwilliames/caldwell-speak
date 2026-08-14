@@ -9,13 +9,13 @@
     "scripts/cast-align.py      -> <drone>-android-<ver>-aligned.png (iris-registered)",
     "scripts/cast-gate.py       -> enforces the cast laws, exits non-zero on failure"
   ],
-  "git_commit": "8b4113d1bf56817b6e0eec95afef5ded40b1d1e4",
+  "git_commit": "0d81680e8110c03fd8b89549c0b6d062bf118e1e",
   "git_dirty": true,
   "characters": {
     "pulsar": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "66493ef095f49539",
+      "prompt_sha256_16": "b48cc09787b816a7",
       "archival_master": {
         "path": "generated-images/masters-archive/pulsar-android-v8-master.jpg",
         "format": "jpeg",
@@ -36,12 +36,12 @@
     "voyager": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "98b1f431013d0ff3",
+      "prompt_sha256_16": "e6903fc83e38fa0c",
       "archival_master": {
         "path": "generated-images/masters-archive/voyager-android-v8-master.jpg",
         "format": "jpeg",
-        "sha256": "d887932a1a0593b44cfbc95f62c527d7ea7f0bcec4d6d776b19e6c31c9cdd59a",
-        "bytes": 643988,
+        "sha256": "b46f5ed329de08293c3b3590380ee76cd9ed997969687f2f4bafae5f1b26adae",
+        "bytes": 644850,
         "c2pa": true,
         "synthid": true,
         "iptc_digitalSourceType": true
@@ -49,20 +49,20 @@
       "derived": {
         "path": "generated-images/voyager-android-v8-aligned.png",
         "format": "png",
-        "sha256": "76a68875c19b69a59551c9a65815a248b941071c92c5f8c4eb645aa15ca2e782",
-        "bytes": 1381054,
+        "sha256": "f84a7a5f2eecde23296b472b2ff9deaa3b3504a783c5b42840986575eca034e5",
+        "bytes": 1417201,
         "declares_provenance": true
       }
     },
     "sentinel": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "1461970840c94717",
+      "prompt_sha256_16": "e62f37cb5f7cb736",
       "archival_master": {
         "path": "generated-images/masters-archive/sentinel-android-v8-master.jpg",
         "format": "jpeg",
-        "sha256": "36d36081f8201e95f72efadc585ab69f55a92222cc2178210625cc52a792cf4a",
-        "bytes": 585991,
+        "sha256": "b7f3806ebc9f0841bb9e6d0a9a3dd50b068a4af2929c67c7153b73dc4351cd91",
+        "bytes": 621487,
         "c2pa": true,
         "synthid": true,
         "iptc_digitalSourceType": true
@@ -70,8 +70,8 @@
       "derived": {
         "path": "generated-images/sentinel-android-v8-aligned.png",
         "format": "png",
-        "sha256": "1deda45bf0701ebd65d42a19e7a9f3e5c0b688e5fc94893aedd8d42cfb4564bb",
-        "bytes": 1322494,
+        "sha256": "72b35d892b59166929bd085e0ba4b8e8c7b605cec3dd72569d923f842120979e",
+        "bytes": 1372287,
         "declares_provenance": true
       }
     },
@@ -99,7 +99,7 @@
     "nebula": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "09d1510f9cb18ab0",
+      "prompt_sha256_16": "0460a3d1cdbfc97a",
       "archival_master": {
         "path": "generated-images/masters-archive/nebula-android-v8-master.jpg",
         "format": "jpeg",
@@ -162,12 +162,12 @@
     "iris": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "b43b727c9647483d",
+      "prompt_sha256_16": "c1e0c1adc4cf6691",
       "archival_master": {
         "path": "generated-images/masters-archive/iris-android-v8-master.jpg",
         "format": "jpeg",
-        "sha256": "e85faedf886db8a75a7dff85c061ab75469797433301666bf3249fed03dc6e0d",
-        "bytes": 600407,
+        "sha256": "4d43c48e06ee846393d15e5f6e28be3c5256ba5fd2abeb786ab757c0d3f453e3",
+        "bytes": 545374,
         "c2pa": true,
         "synthid": true,
         "iptc_digitalSourceType": true
@@ -175,20 +175,20 @@
       "derived": {
         "path": "generated-images/iris-android-v8-aligned.png",
         "format": "png",
-        "sha256": "eb8aacf74ecae67bfd3294c8618a51ecfb84acf4a0d4f83233b62ce427ae821a",
-        "bytes": 1309675,
+        "sha256": "26c674ca1470caaf1e25308bfc9d7c5f91ff9f3309db9b0cf2f98d782730ed7d",
+        "bytes": 1269869,
         "declares_provenance": true
       }
     },
     "meridian": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "341401cc22049d69",
+      "prompt_sha256_16": "81b3cf6ac0382c14",
       "archival_master": {
         "path": "generated-images/masters-archive/meridian-android-v8-master.jpg",
         "format": "jpeg",
-        "sha256": "f5852e84a90b3fbafb41501f506863c88f807269966c1a19376296a8338c466c",
-        "bytes": 620596,
+        "sha256": "4a88b6b34fdfdcb2f6a8bf0136fc23a8f0e6cfa48c16cb1fe3417d2413709170",
+        "bytes": 624364,
         "c2pa": true,
         "synthid": true,
         "iptc_digitalSourceType": true
@@ -196,20 +196,20 @@
       "derived": {
         "path": "generated-images/meridian-android-v8-aligned.png",
         "format": "png",
-        "sha256": "ae0a33ff06d0d415c00405186ddb4b9c2703cfd7ea105b545fa3f6fd3b2f365b",
-        "bytes": 1349286,
+        "sha256": "69644ad7e7a964cbd3f17e851c54915e21d2a921dd8f411efe355fb55e7346ab",
+        "bytes": 1393240,
         "declares_provenance": true
       }
     },
     "vector": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "4a48af4b7f5f7037",
+      "prompt_sha256_16": "c80f8772e9bbe39b",
       "archival_master": {
         "path": "generated-images/masters-archive/vector-android-v8-master.jpg",
         "format": "jpeg",
-        "sha256": "dd4a90bcc2327f96612893f6597eb906392916b78fdd4e527e9b8c07b4f5efb7",
-        "bytes": 548087,
+        "sha256": "f6faa51eb6451ee45ee358a5fce77566a712c47632b29dbfff9e6c765ab1e2bc",
+        "bytes": 575470,
         "c2pa": true,
         "synthid": true,
         "iptc_digitalSourceType": true
@@ -217,8 +217,8 @@
       "derived": {
         "path": "generated-images/vector-android-v8-aligned.png",
         "format": "png",
-        "sha256": "d9dae67e1a9e8ed256e257f36272e53bcb552a700dee5bf066d85fd1fcb75b89",
-        "bytes": 1135889,
+        "sha256": "5c2a958755ee97516b3256f1188130a8e8b213fd0a7725e7fbcdbe8a84ba3821",
+        "bytes": 1316015,
         "declares_provenance": true
       }
     }
