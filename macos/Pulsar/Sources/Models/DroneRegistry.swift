@@ -140,7 +140,7 @@ enum DroneRegistry {
               motion: MotionTrait(bobAmplitude: 2.0, bobFrequency: 0.9,  activeScale: 2.4)),  // deep grape #8040C0 — ΔE>34 from both pulsar-indigo + nebula-magenta
         Drone(category: "iris",     role: "Growth & Lifecycle",   color: Color(red: 0.980, green: 0.745, blue: 0.745), voice: "Tessa",   badge: "M",
               motion: MotionTrait(bobAmplitude: 2.2, bobFrequency: 1.15, activeScale: 2.45)), // coral-rose #F26178 — warm, rhythmic; ΔE76≥51 from every sibling
-        Drone(category: "meridian", role: "General Counsel",    color: Color(red: 0.569, green: 0.118, blue: 0.706), voice: "Ralph",   badge: "L",
+        Drone(category: "meridian", role: "General Counsel",    color: Color(red: 0.000, green: 0.000, blue: 0.459), voice: "Ralph",   badge: "L",
               motion: MotionTrait(bobAmplitude: 1.0, bobFrequency: 0.5,  activeScale: 2.3)),  // deep navy #24427A — near-still, slowest of the cast (counsel doesn't fidget); min ΔE76 41.8 vs pulsar-indigo
         Drone(category: "vector",   role: "Product Manager",  color: Color(red: 1.000, green: 0.882, blue: 0.098), voice: "Kore",     badge: "P",
               motion: MotionTrait(bobAmplitude: 1.8, bobFrequency: 0.8,  activeScale: 2.4)),  // signal red #FF3B1F — the only warm-red lane; min ΔE76 45.9 (nearest iris-coral), well clear of the 40 bar

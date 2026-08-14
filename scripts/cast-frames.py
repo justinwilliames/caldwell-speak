@@ -454,6 +454,29 @@ def verify(name, directory=None):
         notes.append(f"body missing: bottom row only {body:.0f}% subject (need 45%) — "
                      f"the sheet cropped the shoulders off")
 
+    # 2c-bis. THE HEAD MUST FACE FORWARD.
+    #
+    # The frames are the shipped artefact and nothing here checked pose, so an
+    # off-axis master produced off-axis frames and the only gate that could see it
+    # was the one on the masters — which is easy to override while chasing a
+    # different failure. That is exactly what happened: Meridian shipped at -7.9
+    # degrees of yaw because a glow rebuild was accepted at 6/10 and his pose
+    # failure went along for the ride. Justin spotted it on screen.
+    #
+    # Same limits as the master gate (cast_pose): yaw 6, roll 4, pitch 12. Measured
+    # on the cast the day this was added: nine drones inside +/-1.3 yaw, Meridian
+    # at -7.9 and Sentinel at -6.0 with 9.2 of pitch.
+    try:
+        import cast_pose
+        pose = cast_pose.pose(paths[0])
+    except Exception:                                        # noqa: BLE001
+        pose = None
+    if pose is not None:
+        yaw, pitch, roll = pose
+        if abs(yaw) > 6 or abs(roll) > 4 or abs(pitch) > 12:
+            notes.append(f"not facing forward: yaw {yaw:+.1f}, pitch {pitch:+.1f}, "
+                         f"roll {roll:+.1f} (limits 6/12/4)")
+
     # 2d. the CROWN must be in frame. Rescaling cannot rescue this — if the sheet
     #     cut the top of the head off, shrinking the tile just smears a head that
     #     is already missing. Four characters shipped with their crowns flat

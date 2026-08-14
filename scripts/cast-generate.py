@@ -477,6 +477,25 @@ person who runs the room day to day, not the senior counsel who is consulted abo
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 === AUTOMATED CORRECTION ===
 MATERIAL FAILURE — the body carried no warm metal and was rejected. Brass, bronze or aged copper is the cast's shared material signature: it must appear on the manufactured parts of the NECK, SHOULDERS AND COLLAR — plate edges, seam bolts, a jack housing, shoulder hardware — as a visible, unmistakable warm metal against the charcoal uniform. Not a faint tint, not a highlight; actual metal you could name.
 === END CORRECTION ===
@@ -533,6 +552,25 @@ HIS EYEBROWS ARE ORDINARY HUMAN HAIR. Absolutely NO metal brow plate, NO steel e
 NO plated brow ridge, NO hardware of any kind sitting on or replacing the eyebrows — the
 previous render put metal eyebrows on him and they must not appear. Natural grey-flecked
 eyebrows on skin. His machine seams stay on the temples, cheekbones and jaw, never the brow.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -694,27 +732,27 @@ real texture and pores rather than a flawless finish. Weathered and used, not sh
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 === AUTOMATED CORRECTION ===
+MATERIAL FAILURE — the body carried no warm metal and was rejected. Brass, bronze or aged copper is the cast's shared material signature: it must appear on the manufactured parts of the NECK, SHOULDERS AND COLLAR — plate edges, seam bolts, a jack housing, shoulder hardware — as a visible, unmistakable warm metal against the charcoal uniform. Not a faint tint, not a highlight; actual metal you could name.
+
+GLOW FAILURE — the last render was too bright and was rejected. Cut the emissive area back hard: keep the lit lining fine and thin, keep facial grooves narrow, and let the irises be the brightest thing. No broad blooms, no wide washes of colour, no glowing areas larger than a fingertip apart from the eyes.
+
+BACKGROUND GLOW FAILURE — the coloured haze behind this character flooded the frame and was rejected. Pull it back: the background reads BLACK first, with the glow concentrated close behind the head and shoulders and fading to pure black well before the frame edges. No wash across the whole picture.
+
 FACE COLLISION — the underlying facial geometry is too close to another character's and was rejected by a landmark-distance check. Rebuild the face from different bones: change the face SHAPE (long vs square vs heart vs round), the eye spacing and set, the nose length and bridge width, the mouth width, the jaw angle and the brow height. Two people with different hair and the same skull are the same person in a wig.
 
 The character it collided with is IRIS. Study iris's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. SENTINEL and IRIS must be tellable apart by outline alone.
+
+COLOUR FAILURE — the rendered accent drifted off this character's locked colour and was rejected. The lit elements — iris rings, the fine collar and yoke piping, the facial grooves, the indicator lamp and the background spill — must ALL be the exact locked hex stated below. Do not shift it toward a neighbouring hue, do not stylise it, do not let the light temperature pull it. One colour, one character.
+
+BACKGROUND FAILURE — there was structure or texture behind the subject. The background is a FLAT, EMPTY, NEAR-BLACK void with only the faintest haze of the character's colour. No set, no wall, no panelling, no machinery, no gradient banding, no visible surface.
+
+CRITICAL POSE FAILURE — THE LAST RENDER OF THIS CHARACTER WAS TURNED AWAY FROM CAMERA and was rejected by an automated head-pose check. The head must be PERFECTLY SQUARE TO CAMERA: zero yaw, zero rotation, both cheeks showing equally, both ears equally visible, the nose and mouth exactly on the vertical centreline, gaze straight down the lens. Think passport photograph. This overrides every compositional instinct.
+
+LIGHTING FAILURE — the key light was on the wrong side, or the face was lit flat and shadowless, and was rejected. The KEY LIGHT COMES FROM THE CHARACTER'S LEFT (the viewer's right), roughly forty-five degrees off axis and slightly above eye level. The far cheek falls into soft shadow about a stop down — visible modelling on the nose, the brow and the jaw. Flat frontal lighting reads as a snapshot and breaks the set.
 === END CORRECTION ===
 """),
+
 
 
 
@@ -821,22 +859,11 @@ about her is correct and must be preserved exactly.
 
 
 
+
 === AUTOMATED CORRECTION ===
-LIGHTING FAILURE — the key light was on the wrong side, or the face was lit flat and shadowless, and was rejected. The KEY LIGHT COMES FROM THE CHARACTER'S LEFT (the viewer's right), roughly forty-five degrees off axis and slightly above eye level. The far cheek falls into soft shadow about a stop down — visible modelling on the nose, the brow and the jaw. Flat frontal lighting reads as a snapshot and breaks the set.
-
-EYE BRIGHTNESS FAILURE — the last render had irises that were too dark and was rejected by an automated brightness check. BOTH IRISES MUST BLAZE: a hot, saturated, self-luminous ring in the character's colour, near-white at its hottest, casting a visible coloured glow onto the lower eyelid and the inner corner of the eye socket. They are the brightest element on the entire face. A dim tinted eye, a dark coloured lens or a subtle shimmer all fail. The pupil remains a dark hole at the centre.
-
 FACE COLLISION — the underlying facial geometry is too close to another character's and was rejected by a landmark-distance check. Rebuild the face from different bones: change the face SHAPE (long vs square vs heart vs round), the eye spacing and set, the nose length and bridge width, the mouth width, the jaw angle and the brow height. Two people with different hair and the same skull are the same person in a wig.
 
-The character it collided with is NEBULA. Study nebula's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. NOVA and NEBULA must be tellable apart by outline alone.
-
-HEADROOM FAILURE — the top of the head ran off the top edge of the frame and was rejected. The shot is NOT going to be widened: the whole cast shares one fixed zoom and one fixed eye line. Fix it by giving the character a LOWER SILHOUETTE ABOVE THE EYES — hair worn closer to the skull, any hood or headgear low-profile and following the shape of the head, nothing stacked or piled on the crown. There must be clear empty space between the top of the head and the top of the picture.
-
-HEAD SIZE FAILURE — the head was rendered at the wrong scale relative to the rest of the cast, and was rejected. Every portrait must sit at the SAME distance from camera: the head from crown to chin occupies a little over a third of the frame height. Not a distant bust, not a tight beauty crop. Match the style anchor's head size exactly — hold a ruler to it. This is a cast of colleagues photographed in one sitting, on one lens, at one distance.
-
-GLOW FAILURE — the last render was too bright and was rejected. Cut the emissive area back hard: keep the lit lining fine and thin, keep facial grooves narrow, and let the irises be the brightest thing. No broad blooms, no wide washes of colour, no glowing areas larger than a fingertip apart from the eyes.
-
-COLOUR FAILURE — the rendered accent drifted off this character's locked colour and was rejected. The lit elements — iris rings, the fine collar and yoke piping, the facial grooves, the indicator lamp and the background spill — must ALL be the exact locked hex stated below. Do not shift it toward a neighbouring hue, do not stylise it, do not let the light temperature pull it. One colour, one character.
+The character it collided with is VECTOR. Study vector's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. NOVA and VECTOR must be tellable apart by outline alone.
 === END CORRECTION ===
 """),
 
@@ -1098,22 +1125,12 @@ tubes running from the ear unit back under a scalp plate.
 
 
 
+
+
 === AUTOMATED CORRECTION ===
-BACKGROUND FAILURE — there was structure or texture behind the subject. The background is a FLAT, EMPTY, NEAR-BLACK void with only the faintest haze of the character's colour. No set, no wall, no panelling, no machinery, no gradient banding, no visible surface.
-
-EYE BRIGHTNESS FAILURE — the last render had irises that were too dark and was rejected by an automated brightness check. BOTH IRISES MUST BLAZE: a hot, saturated, self-luminous ring in the character's colour, near-white at its hottest, casting a visible coloured glow onto the lower eyelid and the inner corner of the eye socket. They are the brightest element on the entire face. A dim tinted eye, a dark coloured lens or a subtle shimmer all fail. The pupil remains a dark hole at the centre.
-
-CRITICAL POSE FAILURE — THE LAST RENDER OF THIS CHARACTER WAS TURNED AWAY FROM CAMERA and was rejected by an automated head-pose check. The head must be PERFECTLY SQUARE TO CAMERA: zero yaw, zero rotation, both cheeks showing equally, both ears equally visible, the nose and mouth exactly on the vertical centreline, gaze straight down the lens. Think passport photograph. This overrides every compositional instinct.
-
-LIGHTING FAILURE — the key light was on the wrong side, or the face was lit flat and shadowless, and was rejected. The KEY LIGHT COMES FROM THE CHARACTER'S LEFT (the viewer's right), roughly forty-five degrees off axis and slightly above eye level. The far cheek falls into soft shadow about a stop down — visible modelling on the nose, the brow and the jaw. Flat frontal lighting reads as a snapshot and breaks the set.
-
 FACE COLLISION — the underlying facial geometry is too close to another character's and was rejected by a landmark-distance check. Rebuild the face from different bones: change the face SHAPE (long vs square vs heart vs round), the eye spacing and set, the nose length and bridge width, the mouth width, the jaw angle and the brow height. Two people with different hair and the same skull are the same person in a wig.
 
 The character it collided with is MERIDIAN. Study meridian's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. ATLAS and MERIDIAN must be tellable apart by outline alone.
-
-COLOUR FAILURE — the rendered accent drifted off this character's locked colour and was rejected. The lit elements — iris rings, the fine collar and yoke piping, the facial grooves, the indicator lamp and the background spill — must ALL be the exact locked hex stated below. Do not shift it toward a neighbouring hue, do not stylise it, do not let the light temperature pull it. One colour, one character.
-
-HEAD SIZE FAILURE — the head was rendered at the wrong scale relative to the rest of the cast, and was rejected. Every portrait must sit at the SAME distance from camera: the head from crown to chin occupies a little over a third of the frame height. Not a distant bust, not a tight beauty crop. Match the style anchor's head size exactly — hold a ruler to it. This is a cast of colleagues photographed in one sitting, on one lens, at one distance.
 === END CORRECTION ===
 """),
 
@@ -1188,28 +1205,37 @@ her only carried item is the shoulder-clipped broadcast handset.
 
 
 
-=== AUTOMATED CORRECTION ===
-GLOW FAILURE — the last render was too bright and was rejected. Cut the emissive area back hard: keep the lit lining fine and thin, keep facial grooves narrow, and let the irises be the brightest thing. No broad blooms, no wide washes of colour, no glowing areas larger than a fingertip apart from the eyes.
 
-BACKGROUND GLOW FAILURE — the coloured haze behind this character was far too faint and was rejected. Every unit in the cast sits against BLACK WITH A CLEAR GLOW OF ITS OWN COLOUR behind the head and shoulders — deep, saturated and obvious, like a coloured light source hidden behind them. Not a hint, not a tint, not a grey background with a suggestion of colour. It must read as that character's colour at a glance, while still fading to pure black before the edges of the frame.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=== AUTOMATED CORRECTION ===
+LIGHTING FAILURE — the key light was on the wrong side, or the face was lit flat and shadowless, and was rejected. The KEY LIGHT COMES FROM THE CHARACTER'S LEFT (the viewer's right), roughly forty-five degrees off axis and slightly above eye level. The far cheek falls into soft shadow about a stop down — visible modelling on the nose, the brow and the jaw. Flat frontal lighting reads as a snapshot and breaks the set.
+
+GLOW FAILURE — the last render was too bright and was rejected. Cut the emissive area back hard: keep the lit lining fine and thin, keep facial grooves narrow, and let the irises be the brightest thing. No broad blooms, no wide washes of colour, no glowing areas larger than a fingertip apart from the eyes.
 
 BACKGROUND COLOUR FAILURE — the glow behind this character was the WRONG HUE and was rejected. The haze behind the head must be the character's own locked colour stated at the end of this prompt — the SAME colour as their irises and their lit uniform lining, not a neighbouring or complementary shade.
 
-HEADROOM FAILURE — the top of the head ran off the top edge of the frame and was rejected. The shot is NOT going to be widened: the whole cast shares one fixed zoom and one fixed eye line. Fix it by giving the character a LOWER SILHOUETTE ABOVE THE EYES — hair worn closer to the skull, any hood or headgear low-profile and following the shape of the head, nothing stacked or piled on the crown. There must be clear empty space between the top of the head and the top of the picture.
-
-HEAD SIZE FAILURE — the head was rendered at the wrong scale relative to the rest of the cast, and was rejected. Every portrait must sit at the SAME distance from camera: the head from crown to chin occupies a little over a third of the frame height. Not a distant bust, not a tight beauty crop. Match the style anchor's head size exactly — hold a ruler to it. This is a cast of colleagues photographed in one sitting, on one lens, at one distance.
-
-BACKGROUND FAILURE — there was structure or texture behind the subject. The background is a FLAT, EMPTY, NEAR-BLACK void with only the faintest haze of the character's colour. No set, no wall, no panelling, no machinery, no gradient banding, no visible surface.
-
-CRITICAL POSE FAILURE — THE LAST RENDER OF THIS CHARACTER WAS TURNED AWAY FROM CAMERA and was rejected by an automated head-pose check. The head must be PERFECTLY SQUARE TO CAMERA: zero yaw, zero rotation, both cheeks showing equally, both ears equally visible, the nose and mouth exactly on the vertical centreline, gaze straight down the lens. Think passport photograph. This overrides every compositional instinct.
-
-LIGHTING FAILURE — the key light was on the wrong side, or the face was lit flat and shadowless, and was rejected. The KEY LIGHT COMES FROM THE CHARACTER'S LEFT (the viewer's right), roughly forty-five degrees off axis and slightly above eye level. The far cheek falls into soft shadow about a stop down — visible modelling on the nose, the brow and the jaw. Flat frontal lighting reads as a snapshot and breaks the set.
+BACKGROUND GLOW FAILURE — the coloured haze behind this character was far too faint and was rejected. Every unit in the cast sits against BLACK WITH A CLEAR GLOW OF ITS OWN COLOUR behind the head and shoulders — deep, saturated and obvious, like a coloured light source hidden behind them. Not a hint, not a tint, not a grey background with a suggestion of colour. It must read as that character's colour at a glance, while still fading to pure black before the edges of the frame.
 
 FACE COLLISION — the underlying facial geometry is too close to another character's and was rejected by a landmark-distance check. Rebuild the face from different bones: change the face SHAPE (long vs square vs heart vs round), the eye spacing and set, the nose length and bridge width, the mouth width, the jaw angle and the brow height. Two people with different hair and the same skull are the same person in a wig.
 
-The character it collided with is VECTOR. Study vector's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. IRIS and VECTOR must be tellable apart by outline alone.
-
-MATERIAL FAILURE — the body carried no warm metal and was rejected. Brass, bronze or aged copper is the cast's shared material signature: it must appear on the manufactured parts of the NECK, SHOULDERS AND COLLAR — plate edges, seam bolts, a jack housing, shoulder hardware — as a visible, unmistakable warm metal against the charcoal uniform. Not a faint tint, not a highlight; actual metal you could name.
+The character it collided with is SENTINEL. Study sentinel's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. IRIS and SENTINEL must be tellable apart by outline alone.
 === END CORRECTION ===
 """),
 
@@ -1218,7 +1244,7 @@ MATERIAL FAILURE — the body carried no warm metal and was rejected. Brass, bro
 
 
 
-    ("meridian", "#911EB4", """MALE, WHITE BRITISH, late fifties (bm_george). HEAVY-SET and upright, the most formal,
+    ("meridian", "#000075", """MALE, WHITE BRITISH, late fifties (bm_george). HEAVY-SET and upright, the most formal,
 heaviest chassis in the cast.
 
 HE MUST NOT RESEMBLE ANY RECOGNISABLE ACTOR OR PUBLIC FIGURE. The previous render read as a
@@ -1347,16 +1373,25 @@ upper lip and the mouth is fully visible, because these frames have to animate s
 
 
 
-=== AUTOMATED CORRECTION ===
-CRITICAL POSE FAILURE — THE LAST RENDER OF THIS CHARACTER WAS TURNED AWAY FROM CAMERA and was rejected by an automated head-pose check. The head must be PERFECTLY SQUARE TO CAMERA: zero yaw, zero rotation, both cheeks showing equally, both ears equally visible, the nose and mouth exactly on the vertical centreline, gaze straight down the lens. Think passport photograph. This overrides every compositional instinct.
 
+
+
+
+
+
+
+
+=== AUTOMATED CORRECTION ===
 GLOW FAILURE — the last render was too bright and was rejected. Cut the emissive area back hard: keep the lit lining fine and thin, keep facial grooves narrow, and let the irises be the brightest thing. No broad blooms, no wide washes of colour, no glowing areas larger than a fingertip apart from the eyes.
 
 BACKGROUND COLOUR FAILURE — the glow behind this character was the WRONG HUE and was rejected. The haze behind the head must be the character's own locked colour stated at the end of this prompt — the SAME colour as their irises and their lit uniform lining, not a neighbouring or complementary shade.
 
+COLOUR FAILURE — the rendered accent drifted off this character's locked colour and was rejected. The lit elements — iris rings, the fine collar and yoke piping, the facial grooves, the indicator lamp and the background spill — must ALL be the exact locked hex stated below. Do not shift it toward a neighbouring hue, do not stylise it, do not let the light temperature pull it. One colour, one character.
+
 BACKGROUND GLOW FAILURE — the coloured haze behind this character was far too faint and was rejected. Every unit in the cast sits against BLACK WITH A CLEAR GLOW OF ITS OWN COLOUR behind the head and shoulders — deep, saturated and obvious, like a coloured light source hidden behind them. Not a hint, not a tint, not a grey background with a suggestion of colour. It must read as that character's colour at a glance, while still fading to pure black before the edges of the frame.
 === END CORRECTION ===
 """),
+
 
 
 
@@ -1410,12 +1445,35 @@ throat, with signal-red piping. No webbing, no armour, no added gear beyond the 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 === AUTOMATED CORRECTION ===
-FACE COLLISION — the underlying facial geometry is too close to another character's and was rejected by a landmark-distance check. Rebuild the face from different bones: change the face SHAPE (long vs square vs heart vs round), the eye spacing and set, the nose length and bridge width, the mouth width, the jaw angle and the brow height. Two people with different hair and the same skull are the same person in a wig.
-
-The character it collided with is IRIS. Study iris's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. VECTOR and IRIS must be tellable apart by outline alone.
-
 GLOW FAILURE — the last render was too bright and was rejected. Cut the emissive area back hard: keep the lit lining fine and thin, keep facial grooves narrow, and let the irises be the brightest thing. No broad blooms, no wide washes of colour, no glowing areas larger than a fingertip apart from the eyes.
+
+BACKGROUND COLOUR FAILURE — the glow behind this character was the WRONG HUE and was rejected. The haze behind the head must be the character's own locked colour stated at the end of this prompt — the SAME colour as their irises and their lit uniform lining, not a neighbouring or complementary shade.
+
+COLOUR FAILURE — the rendered accent drifted off this character's locked colour and was rejected. The lit elements — iris rings, the fine collar and yoke piping, the facial grooves, the indicator lamp and the background spill — must ALL be the exact locked hex stated below. Do not shift it toward a neighbouring hue, do not stylise it, do not let the light temperature pull it. One colour, one character.
+
+MATERIAL FAILURE — the body carried no warm metal and was rejected. Brass, bronze or aged copper is the cast's shared material signature: it must appear on the manufactured parts of the NECK, SHOULDERS AND COLLAR — plate edges, seam bolts, a jack housing, shoulder hardware — as a visible, unmistakable warm metal against the charcoal uniform. Not a faint tint, not a highlight; actual metal you could name.
+
+LIGHTING FAILURE — the key light was on the wrong side, or the face was lit flat and shadowless, and was rejected. The KEY LIGHT COMES FROM THE CHARACTER'S LEFT (the viewer's right), roughly forty-five degrees off axis and slightly above eye level. The far cheek falls into soft shadow about a stop down — visible modelling on the nose, the brow and the jaw. Flat frontal lighting reads as a snapshot and breaks the set.
 
 BACKGROUND GLOW FAILURE — the coloured haze behind this character was far too faint and was rejected. Every unit in the cast sits against BLACK WITH A CLEAR GLOW OF ITS OWN COLOUR behind the head and shoulders — deep, saturated and obvious, like a coloured light source hidden behind them. Not a hint, not a tint, not a grey background with a suggestion of colour. It must read as that character's colour at a glance, while still fading to pure black before the edges of the frame.
 === END CORRECTION ===

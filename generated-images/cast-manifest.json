@@ -9,13 +9,13 @@
     "scripts/cast-align.py      -> <drone>-android-<ver>-aligned.png (iris-registered)",
     "scripts/cast-gate.py       -> enforces the cast laws, exits non-zero on failure"
   ],
-  "git_commit": "0d81680e8110c03fd8b89549c0b6d062bf118e1e",
+  "git_commit": "2c7709c77ae25718b5cad96c47db8c94fbf41483",
   "git_dirty": true,
   "characters": {
     "pulsar": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "b48cc09787b816a7",
+      "prompt_sha256_16": "9ad5c9903b1c4a14",
       "archival_master": {
         "path": "generated-images/masters-archive/pulsar-android-v8-master.jpg",
         "format": "jpeg",
@@ -36,7 +36,7 @@
     "voyager": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "e6903fc83e38fa0c",
+      "prompt_sha256_16": "0619d5e5397b5b9a",
       "archival_master": {
         "path": "generated-images/masters-archive/voyager-android-v8-master.jpg",
         "format": "jpeg",
@@ -57,7 +57,7 @@
     "sentinel": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "e62f37cb5f7cb736",
+      "prompt_sha256_16": "67787d14cf5d3ef3",
       "archival_master": {
         "path": "generated-images/masters-archive/sentinel-android-v8-master.jpg",
         "format": "jpeg",
@@ -78,7 +78,7 @@
     "nova": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "401ba263c3f7fb5c",
+      "prompt_sha256_16": "a5e6d02189b54f57",
       "archival_master": {
         "path": "generated-images/masters-archive/nova-android-v8-master.jpg",
         "format": "jpeg",
@@ -141,7 +141,7 @@
     "atlas": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "0d7e4112e43a4ba6",
+      "prompt_sha256_16": "204967f65e491c5d",
       "archival_master": {
         "path": "generated-images/masters-archive/atlas-android-v8-master.jpg",
         "format": "jpeg",
@@ -162,7 +162,7 @@
     "iris": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "c1e0c1adc4cf6691",
+      "prompt_sha256_16": "4fc48fa35c08700d",
       "archival_master": {
         "path": "generated-images/masters-archive/iris-android-v8-master.jpg",
         "format": "jpeg",
@@ -183,12 +183,12 @@
     "meridian": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "81b3cf6ac0382c14",
+      "prompt_sha256_16": "754d6907c247137f",
       "archival_master": {
         "path": "generated-images/masters-archive/meridian-android-v8-master.jpg",
         "format": "jpeg",
-        "sha256": "4a88b6b34fdfdcb2f6a8bf0136fc23a8f0e6cfa48c16cb1fe3417d2413709170",
-        "bytes": 624364,
+        "sha256": "1f44781ad8f3694cc5b62ecc9571c1f961fe3526149d3a4f9108c95bf806d8b9",
+        "bytes": 645470,
         "c2pa": true,
         "synthid": true,
         "iptc_digitalSourceType": true
@@ -196,15 +196,15 @@
       "derived": {
         "path": "generated-images/meridian-android-v8-aligned.png",
         "format": "png",
-        "sha256": "69644ad7e7a964cbd3f17e851c54915e21d2a921dd8f411efe355fb55e7346ab",
-        "bytes": 1393240,
+        "sha256": "d901ef7e095e507cecb0266bd012352ff74d160613f0b801e84dc4007dc3a9db",
+        "bytes": 1437805,
         "declares_provenance": true
       }
     },
     "vector": {
       "generator": "google/gemini-3-pro-image",
       "seeded": false,
-      "prompt_sha256_16": "c80f8772e9bbe39b",
+      "prompt_sha256_16": "3d4b553cbcde66f2",
       "archival_master": {
         "path": "generated-images/masters-archive/vector-android-v8-master.jpg",
         "format": "jpeg",
