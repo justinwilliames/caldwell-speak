@@ -67,9 +67,12 @@ struct PortraitView: View {
     /// 320ms gap, during which amplitude is flat zero — so the old gate fired blinks
     /// mid-sentence. Justin caught Meridian doing it on a two-sentence line.
     /// Blinking is for when a drone is PASSIVE, so require the quiet to outlast any
-    /// gap inside a line: 800ms clears Kokoro's 320ms join with room to spare, and
-    /// is still short enough that a resting drone blinks naturally.
-    private let passiveQuietPeriod: Double = 0.8
+    /// gap inside a line. 800ms cleared Kokoro's 320ms sentence join, but not the
+    /// slower voices: Meridian (bm_george) is deliberately measured, and his pauses
+    /// at commas and clause breaks ran past it, so he still blinked mid-sentence.
+    /// 1.5s covers the slowest delivery in the cast and is still short enough that
+    /// a genuinely resting drone blinks naturally between lines.
+    private let passiveQuietPeriod: Double = 1.5
 
 
     /// The portrait clip/stroke shape — a continuous-curvature squircle (rounded

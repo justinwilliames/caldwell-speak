@@ -282,6 +282,105 @@ def normalise_set(frames):
     return out, f"centred (moved {cx / w * 100 - FRAME_CX * 100:+.1f}% x, scale {scale:.3f})"
 
 
+
+def lock_mouth_to_rest(frames):
+    """Give the blink frame mouth-0's ACTUAL mouth, rather than asking for a copy.
+
+    The blink is composited over whatever mouth frame is showing, so its mouth must
+    match mouth-0 exactly or the mouth appears to move every time a drone blinks.
+    Asking the model for a pixel-identical mouth does not work: across 22 generation
+    attempts on six characters only 2 came back inside tolerance — a 9% hit rate,
+    with misses as bad as 68%. It redraws the face each cell and the mouth drifts.
+
+    So it is not asked. The cells already share a generation and are ECC-registered
+    to under a pixel, so mouth-0's lower face can simply be composited into the
+    blink frame through a soft-edged mask. Nothing is invented — these are mouth-0's
+    own pixels, on the same face, in the same position, under the same light. It
+    guarantees what the prompt could only request.
+
+    Only the BLINK is treated this way. The mouth ramp must genuinely differ, and
+    the eyes are left entirely alone, which is the whole point of the frame.
+    """
+    rest, blink = frames[CELLS.index("mouth-0")], frames[CELLS.index("blink")]
+    h, w = rest.shape[:2]
+    # Mask the mouth/jaw only: full strength below the nose, feathered above it so
+    # the seam never lands on a hard edge.
+    mask = np.zeros((h, w), np.float32)
+    top, full = int(h * 0.55), int(h * 0.66)
+    mask[full:, :] = 1.0
+    for y in range(top, full):
+        mask[y, :] = (y - top) / float(full - top)
+    mask = cv2.GaussianBlur(mask, (0, 0), sigmaX=h * 0.012)
+    m3 = cv2.merge([mask, mask, mask])
+    merged = (blink.astype(np.float32) * (1 - m3) + rest.astype(np.float32) * m3)
+    out = list(frames)
+    out[CELLS.index("blink")] = np.clip(merged, 0, 255).astype(np.uint8)
+    return out
+
+
+
+def lock_eyes_to_rest(frames):
+    """Give every MOUTH frame mouth-0's actual eyes.
+
+    The mirror of lock_mouth_to_rest. The mouth ramp is crossfaded by amplitude, so
+    if the eyes differ between mouth-0 and mouth-4 they drift and swim while the
+    character talks — measured worst on Iris at 4.4% of the eye band, which reads as
+    the eyes moving oddly during speech. Only the mouth is supposed to change.
+
+    The blink is deliberately excluded: closing the eyes is the entire point of that
+    frame.
+    """
+    rest = frames[CELLS.index("mouth-0")]
+    h, w = rest.shape[:2]
+    # Brow to just under the eye, feathered top and bottom so no seam lands on skin.
+    mask = np.zeros((h, w), np.float32)
+    top, a, b, bot = int(h * 0.24), int(h * 0.30), int(h * 0.50), int(h * 0.56)
+    mask[a:b, :] = 1.0
+    for y in range(top, a):
+        mask[y, :] = (y - top) / float(a - top)
+    for y in range(b, bot):
+        mask[y, :] = 1.0 - (y - b) / float(bot - b)
+    mask = cv2.GaussianBlur(mask, (0, 0), sigmaX=h * 0.010)
+    m3 = cv2.merge([mask, mask, mask])
+    out = list(frames)
+    for name in ("mouth-1", "mouth-2", "mouth-3", "mouth-4"):
+        i = CELLS.index(name)
+        merged = out[i].astype(np.float32) * (1 - m3) + rest.astype(np.float32) * m3
+        out[i] = np.clip(merged, 0, 255).astype(np.uint8)
+    return out
+
+
+def lock_eye_hardware(frames):
+    """Pin metal worn ON the face so it cannot jitter while the lids move.
+
+    Meridian wears a monocle. The generated blink redraws it slightly, so the frame
+    appeared to shift on his face every time he blinked — the eyepiece is HARDWARE
+    and hardware does not move when someone closes their eye. Justin's call: keep
+    the eye visible beneath the lens, so an opaque disc is out; only the metal is
+    pinned, and the lid blinks behind it as it should.
+
+    The mask is found, not hardcoded: bright, low-saturation (metallic) pixels
+    inside the eye band, taken from mouth-0 and dilated a little to cover the
+    anti-aliased rim. Characters with no facial metal get an empty mask and are
+    untouched, so this costs nothing for the other nine.
+    """
+    rest = frames[CELLS.index("mouth-0")]
+    h, w = rest.shape[:2]
+    hsv = cv2.cvtColor(rest, cv2.COLOR_BGR2HSV)
+    metal = ((hsv[:, :, 2] > 120) & (hsv[:, :, 1] < 70)).astype(np.uint8)
+    metal[:int(h * 0.24), :] = 0          # above the brow: hair and headgear, not eyewear
+    metal[int(h * 0.56):, :] = 0          # below the cheek: collar and uniform
+    if metal.sum() < h * w * 0.002:       # nothing meaningfully metallic near the eyes
+        return frames
+    metal = cv2.dilate(metal, np.ones((5, 5), np.uint8), iterations=1)
+    mask = cv2.GaussianBlur(metal.astype(np.float32), (0, 0), sigmaX=1.6)
+    m3 = cv2.merge([mask, mask, mask])
+    out = list(frames)
+    i = CELLS.index("blink")
+    merged = out[i].astype(np.float32) * (1 - m3) + rest.astype(np.float32) * m3
+    out[i] = np.clip(merged, 0, 255).astype(np.uint8)
+    return out
+
 def verify(name, directory=None):
     """The measurable definition of done, from drone-forge SKILL.md §7."""
     base = directory or RES
@@ -319,6 +418,16 @@ def verify(name, directory=None):
     if lower < 8.0:
         notes.append(f"mouth barely opens: {lower:.1f}% of lower pixels move (need >=8%)")
 
+    # 2b. the eyes must not move across the mouth ramp — they are crossfaded by
+    #     amplitude, so any difference swims while the character talks.
+    eyes_worst = 0.0
+    for k in ("mouth-1", "mouth-2", "mouth-3", "mouth-4"):
+        de = cv2.absdiff(cv2.cvtColor(ref, cv2.COLOR_BGR2GRAY),
+                         cv2.cvtColor(imgs[CELLS.index(k)], cv2.COLOR_BGR2GRAY))
+        eyes_worst = max(eyes_worst, (de[int(h * 0.28):int(h * 0.52), :] > 18).mean() * 100)
+    if eyes_worst > 1.0:
+        notes.append(f"eyes move while talking ({eyes_worst:.1f}%) — mouth frames must share mouth-0's eyes")
+
     # 3. the blink must leave the MOUTH exactly where mouth-0 has it.
     #    The blink is crossfaded over whatever mouth frame is showing, so a blink
     #    whose mouth differs makes the mouth appear to move every time the drone
@@ -334,7 +443,15 @@ def verify(name, directory=None):
     # 4. the blink must actually close the eyes
     db = cv2.absdiff(cv2.cvtColor(ref, cv2.COLOR_BGR2GRAY),
                      cv2.cvtColor(imgs[CELLS.index("blink")], cv2.COLOR_BGR2GRAY))
-    eye_band = (db[int(h * 0.28):int(h * 0.52), :] > 18).mean() * 100
+    # Measure the blink on SKIN ONLY. Facial metal (Meridian's monocle, Pulsar's
+    # comms yoke) is deliberately pinned so it cannot jitter, so counting those
+    # pixels drags the average down and condemns a blink that plainly works —
+    # it pushed two characters under the bar the moment the pinning shipped.
+    _hsv = cv2.cvtColor(ref, cv2.COLOR_BGR2HSV)
+    _metal = ((_hsv[:, :, 2] > 120) & (_hsv[:, :, 1] < 70))
+    _band = slice(int(h * 0.28), int(h * 0.52))
+    _skin = ~_metal[_band, :]
+    eye_band = ((db[_band, :] > 18) & _skin).sum() / max(_skin.sum(), 1) * 100
     if eye_band < 2.0:
         notes.append(f"blink does not close the eyes: {eye_band:.1f}% of the eye band moves")
 
@@ -366,6 +483,9 @@ def build(name, key, reuse=False):
     for i, cell in enumerate(cells):
         fixed = cell if i == 0 else register(ref, cell)[0]
         out.append(cv2.resize(fixed, (OUT_PX, OUT_PX), interpolation=cv2.INTER_AREA))
+    out = lock_mouth_to_rest(out)
+    out = lock_eyes_to_rest(out)
+    out = lock_eye_hardware(out)
     out, centre_note = normalise_set(out)
 
     # STAGE, VERIFY, THEN PUBLISH — never the other way round.
