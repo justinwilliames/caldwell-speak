@@ -824,6 +824,9 @@ private struct ParticipantSlotView: View {
     /// Opens the session the CENTRE speaker is speaking from. nil when there's no
     /// addressable session — the portrait is then inert, as before.
     var openSession: (() -> Void)?
+
+    /// Set while the pointer is dragging, so mouse-up does not open a session.
+    @State private var didDrag = false
     /// That session's display name, for the portrait's tooltip.
     var sessionName: String?
     /// Pointer entered/left the CENTRE portrait — drives the session nameplate's
@@ -875,8 +878,33 @@ private struct ParticipantSlotView: View {
                         // Click the talking head → its session. A Button rather
                         // than a tap gesture so the panel's move-by-background
                         // doesn't swallow the mouseDown.
-                        Button(action: openSession) { portrait }
+                        //
+                        // A DRAG IS NOT A CLICK. The whole panel moves by its
+                        // background, and the portrait is most of that background,
+                        // so dragging the swarm out of the way fired the button on
+                        // mouse-up and yanked the user into Claude Code every time
+                        // they repositioned it. The gesture below runs BEFORE the
+                        // button and records how far the pointer travelled; the
+                        // action only fires if it stayed within a few points.
+                        //
+                        // 4pt, not 0: a real click always carries a pixel or two of
+                        // hand tremor, and a zero-tolerance test would make the
+                        // click feel broken instead.
+                        Button(action: { if !didDrag { openSession() } }) { portrait }
                             .buttonStyle(.plain)
+                            .simultaneousGesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { g in
+                                        if abs(g.translation.width) > 4
+                                            || abs(g.translation.height) > 4 { didDrag = true }
+                                    }
+                                    .onEnded { _ in
+                                        // Clear on the NEXT runloop pass: the button's
+                                        // action fires after this, and resetting here
+                                        // would make every drag look like a click again.
+                                        DispatchQueue.main.async { didDrag = false }
+                                    }
+                            )
                             .help(sessionName.map { "Open the “\($0)” session in Claude Code" }
                                   ?? "Open this session in Claude Code")
                     } else {
