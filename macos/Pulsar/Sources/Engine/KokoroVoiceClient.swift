@@ -370,12 +370,24 @@ enum KokoroVoiceClient {
     /// configured gap the ONLY thing that sets the pause.
     static func trimSilence(_ samples: [Float], threshold: Float = 0.004,
                             marginMs: Int = 25) -> [Float] {
-        guard let first = samples.firstIndex(where: { abs($0) > threshold }),
-              let last = samples.lastIndex(where: { abs($0) > threshold })
+        // TRAILING ONLY. The leading trim used to cut everything before the first
+        // sample above 0.004, keeping 25ms of margin — and a word that OPENS on a
+        // soft consonant starts below that threshold. The onset was being sliced
+        // off, so the word arrived clipped or, at small volumes, effectively
+        // missing. Justin heard it as whole words being skipped ("pre-header").
+        //
+        // Only multi-sentence lines are trimmed at all, which matches the symptom:
+        // it showed up on long lines and never on short ones.
+        //
+        // The trailing trim is the one that earns its place — it removes the dead
+        // air Kokoro leaves at the end of a sentence so the inter-sentence gap is
+        // the gap we asked for rather than that plus whatever it rendered. Cutting
+        // the START buys nothing: the sentence has to begin somewhere, and a few
+        // milliseconds of quiet before a plosive is what a plosive SOUNDS like.
+        guard let last = samples.lastIndex(where: { abs($0) > threshold })
         else { return samples }
         let margin = sampleRate * marginMs / 1000
-        let lo = max(0, first - margin)
         let hi = min(samples.count - 1, last + margin)
-        return Array(samples[lo...hi])
+        return Array(samples[0...hi])
     }
 }

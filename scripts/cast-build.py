@@ -290,19 +290,52 @@ def gate():
 
 
 ACCUMULATED = {}
+ACCUMULATED_KEYS = {}
 
 
-def inject(drone, notes):
+# Corrections that are OPPOSITE ENDS OF ONE AXIS. Only the newest of each group
+# may be in a brief at a time — they must REPLACE each other, never stack.
+#
+# Accumulating everything was right for independent defects and catastrophic for
+# these. A background-glow rebuild handed the model "the glow was far too faint,
+# make it deep and saturated" AND "the glow flooded the frame, pull it back" in the
+# same prompt, because the first render overshot the fix for the second. The model
+# got both instructions at once, brief_drift flagged three contradictory rules, and
+# all four characters came back worse than they started.
+OPPOSING = [
+    {"glow too weak", "glow too strong"},
+    {"eyes dim", "glow"},
+    {"IOD", "eyeCy"},
+]
+
+
+def _supersedes(new_key, old_key):
+    """True when new_key and old_key are opposite ends of the same axis."""
+    return any(new_key in g and old_key in g and new_key != old_key for g in OPPOSING)
+
+
+def inject(drone, notes, keys=()):
     """Add corrections to a character's brief, KEEPING every earlier one.
 
     Replacing the block each round made defects oscillate: a character that stopped
     failing the orb check lost its orb instruction and grew the orb straight back on
-    the following round. A correction, once earned, stays.
+    the following round. A correction, once earned, stays — UNLESS its opposite
+    arrives, in which case the newer one wins and the older is dropped. See OPPOSING.
     """
     prior = ACCUMULATED.setdefault(drone, [])
-    for nt in notes:
+    prior_keys = ACCUMULATED_KEYS.setdefault(drone, [])
+    for nt, key in zip(notes, keys or [None] * len(notes)):
+        if key:
+            # Drop anything this correction contradicts before adding it.
+            for i in range(len(prior_keys) - 1, -1, -1):
+                if prior_keys[i] and _supersedes(key, prior_keys[i]):
+                    print(f"    {drone}: '{key}' supersedes '{prior_keys[i]}' — "
+                          f"dropping the contradiction")
+                    prior.pop(i)
+                    prior_keys.pop(i)
         if nt not in prior:
             prior.append(nt)
+            prior_keys.append(key)
     notes = prior
     p = os.path.join(SCRIPTS, "cast-generate.py")
     s = open(p).read()
@@ -438,11 +471,12 @@ for rnd in range(1, a.rounds + 1):
               "stopping rather than re-rolling an approved face")
         break
     for d, fs in fails.items():
-        notes = []
+        notes, keys = [], []
         for f in fs:
             for key, text in CORRECTIONS.items():
                 if key in f and text not in notes:
                     notes.append(text)
+                    keys.append(key)
             # Name the sibling it collided with. "Differ from another character"
             # is not an instruction a renderer can follow; "differ from Meridian,
             # who has X" is. The gate already knows who — pass it through.
@@ -455,8 +489,9 @@ for rnd in range(1, a.rounds + 1):
                       f"{d.upper()} and {other.upper()} must be tellable apart by outline alone.")
                 if nt not in notes:
                     notes.append(nt)
+                    keys.append(None)
         if notes:
-            inject(d, notes)
+            inject(d, notes, keys)
     print()
 
 print()

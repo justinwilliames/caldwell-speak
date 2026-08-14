@@ -463,12 +463,11 @@ person who runs the room day to day, not the senior counsel who is consulted abo
 
 
 
+
+
+
 === AUTOMATED CORRECTION ===
 MATERIAL FAILURE — the body carried no warm metal and was rejected. Brass, bronze or aged copper is the cast's shared material signature: it must appear on the manufactured parts of the NECK, SHOULDERS AND COLLAR — plate edges, seam bolts, a jack housing, shoulder hardware — as a visible, unmistakable warm metal against the charcoal uniform. Not a faint tint, not a highlight; actual metal you could name.
-
-SILHOUETTE COLLISION — at menu-bar size this character is indistinguishable from a sibling, and was rejected. It must be recognisable as a THUMBNAIL, where all that survives is the outline, the hair mass, the headgear shape and the colour. Push the read-at-a-glance features hard apart from the rest of the cast: a distinctly different hair volume and outline, a different headgear profile, a different shoulder line. Detail that only appears at full resolution does not count.
-
-The character it collided with is MERIDIAN. Study meridian's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. PULSAR and MERIDIAN must be tellable apart by outline alone.
 === END CORRECTION ===
 """),
 
@@ -523,6 +522,15 @@ HIS EYEBROWS ARE ORDINARY HUMAN HAIR. Absolutely NO metal brow plate, NO steel e
 NO plated brow ridge, NO hardware of any kind sitting on or replacing the eyebrows — the
 previous render put metal eyebrows on him and they must not appear. Natural grey-flecked
 eyebrows on skin. His machine seams stay on the temples, cheekbones and jaw, never the brow.
+
+
+
+
+=== AUTOMATED CORRECTION ===
+GLOW FAILURE — the last render was too bright and was rejected. Cut the emissive area back hard: keep the lit lining fine and thin, keep facial grooves narrow, and let the irises be the brightest thing. No broad blooms, no wide washes of colour, no glowing areas larger than a fingertip apart from the eyes.
+
+BACKGROUND GLOW FAILURE — the coloured haze behind this character was far too faint and was rejected. Every unit in the cast sits against BLACK WITH A CLEAR GLOW OF ITS OWN COLOUR behind the head and shoulders — deep, saturated and obvious, like a coloured light source hidden behind them. Not a hint, not a tint, not a grey background with a suggestion of colour. It must read as that character's colour at a glance, while still fading to pure black before the edges of the frame.
+=== END CORRECTION ===
 """),
 
 
@@ -1150,6 +1158,19 @@ the walkie-talkie comms reference works and is her signature.
 UNIFORM TIER — EXECUTIVE: the standard charcoal tunic worn plain, pressed and closed to the
 throat, with coral piping at the collar and yoke seam. No webbing, no armour, no added straps —
 her only carried item is the shoulder-clipped broadcast handset.
+
+
+
+
+=== AUTOMATED CORRECTION ===
+GLOW FAILURE — the last render was too bright and was rejected. Cut the emissive area back hard: keep the lit lining fine and thin, keep facial grooves narrow, and let the irises be the brightest thing. No broad blooms, no wide washes of colour, no glowing areas larger than a fingertip apart from the eyes.
+
+BACKGROUND COLOUR FAILURE — the glow behind this character was the WRONG HUE and was rejected. The haze behind the head must be the character's own locked colour stated at the end of this prompt — the SAME colour as their irises and their lit uniform lining, not a neighbouring or complementary shade.
+
+FACE COLLISION — the underlying facial geometry is too close to another character's and was rejected by a landmark-distance check. Rebuild the face from different bones: change the face SHAPE (long vs square vs heart vs round), the eye spacing and set, the nose length and bridge width, the mouth width, the jaw angle and the brow height. Two people with different hair and the same skull are the same person in a wig.
+
+The character it collided with is VECTOR. Study vector's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. IRIS and VECTOR must be tellable apart by outline alone.
+=== END CORRECTION ===
 """),
 
 
@@ -1272,6 +1293,17 @@ complexion. Give him a NEATLY TRIMMED SILVER BEARD — full but close-cropped, c
 jaw and chin. He is the only bearded unit in the cast and that beard is what separates him
 from Pulsar at any size. It must not cross the lips: the moustache is trimmed clear of the
 upper lip and the mouth is fully visible, because these frames have to animate speech.
+
+
+
+
+=== AUTOMATED CORRECTION ===
+GLOW FAILURE — the last render was too bright and was rejected. Cut the emissive area back hard: keep the lit lining fine and thin, keep facial grooves narrow, and let the irises be the brightest thing. No broad blooms, no wide washes of colour, no glowing areas larger than a fingertip apart from the eyes.
+
+BACKGROUND GLOW FAILURE — the coloured haze behind this character was far too faint and was rejected. Every unit in the cast sits against BLACK WITH A CLEAR GLOW OF ITS OWN COLOUR behind the head and shoulders — deep, saturated and obvious, like a coloured light source hidden behind them. Not a hint, not a tint, not a grey background with a suggestion of colour. It must read as that character's colour at a glance, while still fading to pure black before the edges of the frame.
+
+BACKGROUND COLOUR FAILURE — the glow behind this character was the WRONG HUE and was rejected. The haze behind the head must be the character's own locked colour stated at the end of this prompt — the SAME colour as their irises and their lit uniform lining, not a neighbouring or complementary shade.
+=== END CORRECTION ===
 """),
 
 
@@ -1319,6 +1351,19 @@ on the topmost priority card. Plus the lit lining of the uniform.
 
 UNIFORM TIER — EXECUTIVE: the standard charcoal tunic worn plain and immaculate, closed to the
 throat, with signal-red piping. No webbing, no armour, no added gear beyond the card-frame.
+
+
+
+
+=== AUTOMATED CORRECTION ===
+GLOW FAILURE — the last render was too bright and was rejected. Cut the emissive area back hard: keep the lit lining fine and thin, keep facial grooves narrow, and let the irises be the brightest thing. No broad blooms, no wide washes of colour, no glowing areas larger than a fingertip apart from the eyes.
+
+FACE COLLISION — the underlying facial geometry is too close to another character's and was rejected by a landmark-distance check. Rebuild the face from different bones: change the face SHAPE (long vs square vs heart vs round), the eye spacing and set, the nose length and bridge width, the mouth width, the jaw angle and the brow height. Two people with different hair and the same skull are the same person in a wig.
+
+The character it collided with is IRIS. Study iris's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. VECTOR and IRIS must be tellable apart by outline alone.
+
+BACKGROUND GLOW FAILURE — the coloured haze behind this character was far too faint and was rejected. Every unit in the cast sits against BLACK WITH A CLEAR GLOW OF ITS OWN COLOUR behind the head and shoulders — deep, saturated and obvious, like a coloured light source hidden behind them. Not a hint, not a tint, not a grey background with a suggestion of colour. It must read as that character's colour at a glance, while still fading to pure black before the edges of the frame.
+=== END CORRECTION ===
 """),
 
 
