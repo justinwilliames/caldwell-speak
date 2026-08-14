@@ -5,12 +5,19 @@ final class FloatingPanelController: NSPanel {
     /// Head-zone footprint (matches `FloatingHeadsView.headZone*`). The visible
     /// head + glow live here; the caption grows above or below it.
     static let headZoneWidth: CGFloat = FloatingHeadsView.headZoneWidth   // 240
-    static let headZoneHeight: CGFloat = FloatingHeadsView.headZoneHeight // 200
+    static let headZoneHeight: CGFloat = FloatingHeadsView.headZoneHeight
 
     /// Panel is widened to the caption max (280) so a full-width caption is always
     /// contained; the 240 head zone is centred within it. Clamping the panel's X
     /// into the screen then guarantees the caption never crosses a side edge.
-    static let panelWidth: CGFloat = SubtitleBubbleView.maxWidth          // 280
+    /// The window must be at least as wide as the swarm it contains.
+    ///
+    /// This was pinned to the subtitle's max width (280) while the head zone grew
+    /// to 320 for the ten-drone cast — so the window was NARROWER than its own
+    /// content and clipped the outer heads, and `centringSlack` below went quietly
+    /// negative. The panel is now sized by whichever of the two needs more room.
+    static let panelWidth: CGFloat = max(SubtitleBubbleView.maxWidth,
+                                         FloatingHeadsView.headZoneWidth)
 
     /// Margin kept between the panel and every screen edge.
     private let screenMargin: CGFloat = 16
@@ -90,10 +97,21 @@ final class FloatingPanelController: NSPanel {
         // cleared). A position the user has dragged Pulsar to persists across
         // utterances — we just re-evaluate caption placement at that spot.
         if headTopLeft == nil {
-            let centringSlack = (Self.panelWidth - Self.headZoneWidth) / 2
-            let headLeftX = vf.minX + screenMargin - centringSlack
-            let headTopY = vf.maxY - screenMargin
-            headTopLeft = NSPoint(x: headLeftX, y: headTopY)
+            // Restore where the user last left it, CLAMPED to the screen that
+            // actually exists now — a saved position from a monitor that has since
+            // been unplugged would otherwise strand the panel off-screen with no
+            // way to drag it back.
+            if let saved = PulsarConfig.shared.panelOrigin {
+                let x = min(max(saved.x, vf.minX - Self.headZoneWidth / 2),
+                            vf.maxX - Self.headZoneWidth / 2)
+                let y = min(max(saved.y, vf.minY + Self.headZoneHeight / 2), vf.maxY)
+                headTopLeft = NSPoint(x: x, y: y)
+            } else {
+                let centringSlack = (Self.panelWidth - Self.headZoneWidth) / 2
+                let headLeftX = vf.minX + screenMargin - centringSlack
+                let headTopY = vf.maxY - screenMargin
+                headTopLeft = NSPoint(x: headLeftX, y: headTopY)
+            }
         }
         relayout(animated: false)
     }
@@ -217,6 +235,8 @@ final class FloatingPanelController: NSPanel {
             ? f.maxY - captionHeight       // caption is above; head top is below it
             : f.maxY                        // head is at the panel top
         headTopLeft = NSPoint(x: headLeftX, y: headTopY)
+        // Remember it: a drag is the user telling us where Pulsar lives.
+        PulsarConfig.shared.setPanelOrigin(CGPoint(x: headLeftX, y: headTopY))
         // The new position may have changed which side the FULL caption fits on —
         // re-evaluate the locked edge from the known full height at this spot.
         if let full = lockedFullHeight {

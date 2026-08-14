@@ -16,10 +16,26 @@ struct FloatingHeadsView: View {
     /// long captions at ~3 lines.
     var onCaptionText: ((String) -> Void)?
 
+    /// Full centre portrait size (matches FloatingPortraitView.portraitSize).
+    static let centrePortraitSize: CGFloat = 120
+
     private let orbitRadius: CGFloat = 80
-    /// In-action sub-agent thumbnail size — bumped ~30% (40→52) so the swarm reads
-    /// bold, not compressed. The cluster spacing + arc step below scale with it.
-    private let thumbnailSize: CGFloat = 52
+
+    /// Ring radius that makes the orbiting heads OVERLAP the speaker slightly.
+    ///
+    /// Centre-to-centre of (half the speaker + half a thumbnail) is exactly
+    /// touching; subtracting the overlap tucks them under. The speaker holds
+    /// zIndex(20) so it always renders on top and the overlap reads as depth.
+    private let speakerOverlap: CGFloat = 12
+    private var overlapRadius: CGFloat {
+        (Self.centrePortraitSize + thumbnailSize) / 2 - speakerOverlap
+    }
+    /// In-action sub-agent thumbnail size — the PASSIVE (orbiting) head. Bumped
+    /// 40→52 (~30%), then 52→62 (+20%, Justin 2026-08-14) now the portraits carry
+    /// real faces worth seeing rather than abstract robot heads. The cluster
+    /// spacing and arc step below are derived from this, so they scale with it and
+    /// the heads cannot start overlapping as it grows.
+    private let thumbnailSize: CGFloat = 62
     /// Lift the whole cluster UP so the swarm hovers over the TOP of the hub,
     /// leaving the below-head zone clear for the name pill + subtitle.
     private let orbitYOffset: CGFloat = -8
@@ -36,7 +52,17 @@ struct FloatingHeadsView: View {
     /// Grid spacing for the IDLE symmetric cluster (no speaker) — sized to the
     /// larger 52pt thumbnails (~10pt gap) so they sit snug as one oval pod without
     /// the heads overlapping.
-    private let clusterSpacing: CGFloat = 63
+    /// Centre-to-centre spacing of the IDLE cluster — the passive floating heads.
+    ///
+    /// DERIVED, never a bare number. It was hardcoded at 63, tuned when heads were
+    /// 52pt (an 11pt gap). When the heads grew to 62pt that became a ONE POINT gap
+    /// and the swarm visibly collided — and the earlier clearance fix did not help,
+    /// because that one only touched the speaking ARC. Idle layout is a separate
+    /// code path and knew nothing about head size.
+    ///
+    /// The gap allows for the per-drone bob (~3.4pt each, so ~7pt of closing between
+    /// two neighbours on opposite phases) plus the lit border and its glow.
+    private var clusterSpacing: CGFloat { thumbnailSize + 16 }
 
     /// Fixed head-zone footprint. The head + its orbiting queue thumbnails + glow
     /// live here; the caption grows ABOVE or BELOW it. Height is sized so the
@@ -46,8 +72,14 @@ struct FloatingHeadsView: View {
     /// placement (caption-below ⇒ head near top, caption-above ⇒ head near
     /// bottom) clips the glow. The caption still hugs the head via the negative
     /// attach gap below, so this headroom does NOT reopen an empty gap.
-    static let headZoneWidth: CGFloat = 240
-    static let headZoneHeight: CGFloat = 240
+    // The head zone is a FIXED frame, so it has to be big enough for the largest
+    // swarm the geometry can produce — it does not grow to fit. At 62pt heads the
+    // collision-clearance maths pushes the orbit radius to ~104pt, putting the top
+    // of a head ~143pt above centre; against the old 240pt zone (120pt half-height)
+    // the cluster was clipped off the top of the screen. Sized for radius + half a
+    // head + the lit border and its glow, with margin.
+    static let headZoneWidth: CGFloat = 320
+    static let headZoneHeight: CGFloat = 320
 
     /// Vertical overlap between the head zone and the caption. The head squircle
     /// (120pt) is centred in the 240pt head zone, so its BOTTOM sits ~60pt above
@@ -55,7 +87,15 @@ struct FloatingHeadsView: View {
     /// bubble's tail nearly touches the squircle bottom, leaving only a few px —
     /// while still reserving `glowMargin` (via captionEdgePadding) so neither
     /// glow hard-cuts. −54 ⇒ tail ~6px below the squircle after the padding.
-    private let captionAttachGap: CGFloat = -54
+    /// Negative spacing that pulls the caption bubble back up toward the speaking
+    /// head. DERIVED from the head-zone height, not a bare number.
+    ///
+    /// -54 was hand-fitted when the zone was 240pt tall. The speaking head is
+    /// centred in the zone but the bubble hangs below the WHOLE zone, so growing
+    /// the zone to 320pt (to stop the swarm being cropped) pushed the bubble
+    /// (320-240)/2 = 40pt further from the face. Tying the gap to the zone means a
+    /// future resize moves the bubble with the head instead of away from it.
+    private var captionAttachGap: CGFloat { -54 - (Self.headZoneHeight - 240) / 2 }
     /// Padding around the caption inside the panel — sized to the bubble's glow
     /// reserve so the outer glow fades fully before the panel edge (top/bottom +
     /// the horizontal side that the tail edge doesn't consume).
@@ -80,10 +120,22 @@ struct FloatingHeadsView: View {
     /// before this timer ever clears the text.
     static let lingerAfterIdle: TimeInterval = 6.0
 
-    /// Max thumbnails on the orbit arc WHILE a speaker holds the centre. Six
-    /// keeps every head legible at the enlarged-centre scale; the idle cluster is
-    /// uncapped (its 3-row palindrome handles all nine cleanly).
-    static let speakingOrbitCap = 6
+    /// Max thumbnails on the orbit arc WHILE a speaker holds the centre. With a
+    /// ten-strong cast, one speaks and nine can orbit, so the cap is nine and the
+    /// arc adapts instead: `orbitArcGeometry` shrinks the angular step and grows
+    /// the radius together, so nine 52pt heads neither overlap nor wrap the ring.
+    /// The idle cluster is uncapped (its 3-row palindrome already packs 10:[3,4,3]).
+    static let speakingOrbitCap = 9
+
+    /// Widest arc the swarm may occupy while a speaker holds the centre. Kept
+    /// under a full circle so the pod still reads as a cluster ABOVE the hub
+    /// rather than a ring around it.
+    /// The swarm occupies a SEMI-CIRCLE over the speaker — top, left and right,
+    /// never the bottom. 300° wrapped the ring almost the whole way round, which
+    /// put heads underneath the speaker where the subtitle bubble sits and
+    /// covers them. 200°, centred on straight up, spans from the 8 o'clock
+    /// position round to 4 o'clock and leaves the bottom clear for the caption.
+    private let maxOrbitSpanDegrees: Double = 200
 
     var body: some View {
         VStack(spacing: captionAttachGap) {
@@ -120,7 +172,19 @@ struct FloatingHeadsView: View {
     private var speaker: DashboardViewModel.SpeakerSnapshot? { viewModel.activeSpeaker }
 
     /// The drone category owning the line, or nil when Pulsar speaks.
-    private var activeDroneCategory: String? { speaker?.category }
+    ///
+    /// `"pulsar"` normalises to nil. Pulsar became a spawnable category with a real
+    /// DroneRegistry entry, so a line can now legitimately arrive tagged
+    /// `--agent pulsar` — but every branch in this view encodes "Pulsar is speaking"
+    /// as category == nil. Left un-normalised, a pulsar-tagged line took the
+    /// orbiting-drone path instead of the hub path: the head stayed small, never
+    /// took the centre, and did not animate while the subtitle played. Observed by
+    /// Justin on the first Kokoro roll call.
+    private var activeDroneCategory: String? {
+        guard let c = speaker?.category?.lowercased()
+            .trimmingCharacters(in: .whitespaces), !c.isEmpty, c != "pulsar" else { return nil }
+        return c
+    }
 
     /// The head zone renders while ANY participant is present — the live team
     /// (Pulsar + running sub-agents), whether or not anyone is currently
@@ -613,8 +677,33 @@ struct FloatingHeadsView: View {
         // Symmetric offset from centre: e.g. total=3 → offsets -1,0,+1;
         // total=4 → -1.5,-0.5,+0.5,+1.5.
         let offset = Double(index) - Double(total - 1) / 2.0
-        let degrees = clusterCenterDegrees + offset * clusterStepDegrees
+        let degrees = clusterCenterDegrees + offset * orbitArcGeometry(total).stepDegrees
         return degrees * .pi / 180
+    }
+
+    /// Angular step and radius for an arc of `total` slots.
+    ///
+    /// A fixed 44° step fanned four drones out nicely and wrapped nine right round
+    /// the hub. So the step shrinks to keep the whole swarm inside
+    /// `maxOrbitSpanDegrees`, and the radius then grows to whatever keeps adjacent
+    /// 52pt heads from touching at that step — chord = 2·r·sin(step/2), which must
+    /// clear the thumbnail plus a small gap. Small swarms are unchanged; only a
+    /// large one pushes the ring outwards.
+    private func orbitArcGeometry(_ total: Int) -> (stepDegrees: Double, radius: CGFloat) {
+        guard total > 1 else { return (clusterStepDegrees, overlapRadius) }
+
+        // The ring sits at a FIXED radius that tucks the heads under the speaker,
+        // and the fan is capped to a semi-circle over the top. Neither gives way.
+        //
+        // Earlier versions grew the radius until neighbours cleared each other,
+        // which is what pushed the swarm out into a wide, detached ring. Justin's
+        // call (2026-08-14): "drones can also overlap when they are swarming
+        // behind a speaker" — so crowding is allowed, and the ONLY thing that
+        // gives is the angle between them. The speaker holds zIndex(20) and each
+        // orbiter is z-ordered behind it, so overlap reads as a pocket of heads
+        // behind the speaker rather than a collision.
+        let span = maxOrbitSpanDegrees / Double(total - 1)
+        return (min(clusterStepDegrees, span), overlapRadius)
     }
 
     /// The base slot offset for orbit participant `index` of `total`. Two modes:
@@ -623,13 +712,34 @@ struct FloatingHeadsView: View {
     ///   • Idle (no speaker) → a SYMMETRIC CLUSTER: the whole swarm squeezes into
     ///     a vertically + horizontally balanced pod centred in the head zone.
     private func slotOffset(index: Int, total: Int) -> CGSize {
+        let raw: CGSize
         if speaker != nil {
             let angle = orbitAngle(index: index, total: total)
-            return CGSize(width: cos(angle) * orbitRadius,
-                          height: sin(angle) * orbitRadius + orbitYOffset)
+            let r = orbitArcGeometry(total).radius
+            raw = CGSize(width: cos(angle) * r,
+                         height: sin(angle) * r + orbitYOffset)
+        } else {
+            let offs = symmetricClusterOffsets(total)
+            raw = index < offs.count ? offs[index] : .zero
         }
-        let offs = symmetricClusterOffsets(total)
-        return index < offs.count ? offs[index] : .zero
+        return clampToPanel(raw)
+    }
+
+    /// Keep every head inside the panel, whatever the geometry above asks for.
+    ///
+    /// The head zone is a FIXED frame and nothing else was checking against it:
+    /// biasing the idle pod upward (to keep it clear of the subtitle) pushed the
+    /// top row straight off the top of the screen. Both layout paths now pass
+    /// through here, so a future change to either one cannot put a head outside
+    /// the panel — the clamp is the backstop, not the layout's good manners.
+    ///
+    /// The margin covers half a head plus the lit border and its glow.
+    private func clampToPanel(_ o: CGSize) -> CGSize {
+        let margin = thumbnailSize / 2 + 8
+        let maxX = Self.headZoneWidth / 2 - margin
+        let maxY = Self.headZoneHeight / 2 - margin
+        return CGSize(width: min(max(o.width, -maxX), maxX),
+                      height: min(max(o.height, -maxY), maxY))
     }
 
     /// Symmetric-cluster slot offsets for the idle swarm, centred on the head
@@ -661,7 +771,11 @@ struct FloatingHeadsView: View {
         var offsets: [CGSize] = []
         let rowCount = rows.count
         for (r, count) in rows.enumerated() {
-            let y = (CGFloat(r) - CGFloat(rowCount - 1) / 2) * clusterSpacing + orbitYOffset
+            // Bias the whole pod UPWARD. Rows centred on the hub put a row below
+            // it, straight under the subtitle bubble. Shifting up by half the pod
+            // keeps every head above the caption line.
+            let y = (CGFloat(r) - CGFloat(rowCount - 1) / 2) * clusterSpacing
+                  + orbitYOffset - CGFloat(rowCount - 1) * clusterSpacing / 4
             for c in 0..<count {
                 let x = (CGFloat(c) - CGFloat(count - 1) / 2) * clusterSpacing
                 offsets.append(CGSize(width: x, height: y))
@@ -711,8 +825,10 @@ private struct ParticipantSlotView: View {
     /// hover reveal. Never fired for orbiting participants.
     var onPortraitHover: ((Bool) -> Void)?
 
-    /// Full centre portrait size (matches FloatingPortraitView.portraitSize).
-    private let centrePortraitSize: CGFloat = 120
+    /// Full centre portrait size — ONE definition, shared with the geometry that
+    /// positions the ring around it. A private copy here and another in
+    /// FloatingHeadsView is how the ring and the speaker drift apart.
+    private var centrePortraitSize: CGFloat { FloatingHeadsView.centrePortraitSize }
 
     private var isCentre: Bool { participant.isCentre }
     private var category: String { participant.category ?? "pulsar" }

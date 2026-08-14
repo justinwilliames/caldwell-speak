@@ -186,7 +186,9 @@ final class KokoroModelManager {
         cancel()
         KokoroVoiceClient.unload()
         try? FileManager.default.removeItem(at: KokoroVoiceClient.modelDirectory)
-        try? PulsarConfig.shared.set(PulsarConfig.voiceEngineKey, value: VoiceEngine.native.rawValue)
+        // No engine to fall back to: Kokoro is compulsory (Justin, 2026-08-14).
+        // Deleting the weights makes Pulsar mute until they are downloaded again,
+        // and the UI says so rather than quietly swapping in a macOS voice.
         phase = .notInstalled
     }
 

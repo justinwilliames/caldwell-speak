@@ -120,6 +120,12 @@ let package = Package(
                 .copy("Resources/meridian-mouth-3.png"),
                 .copy("Resources/meridian-mouth-4.png"),
                 .copy("Resources/meridian-blink.png"),
+                .copy("Resources/vector-mouth-0.png"),
+                .copy("Resources/vector-mouth-1.png"),
+                .copy("Resources/vector-mouth-2.png"),
+                .copy("Resources/vector-mouth-3.png"),
+                .copy("Resources/vector-mouth-4.png"),
+                .copy("Resources/vector-blink.png"),
                 // Claude Code voice-integration payload — the skill, the hooks,
                 // say.sh + CANON.md + voices.json. Bundled verbatim so a DMG-only
                 // user (no repo) can one-click install Pulsar's Claude integration

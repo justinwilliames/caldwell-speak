@@ -48,15 +48,30 @@ enum KokoroVoiceClient {
     ///
     /// Every id here MUST exist in `VoiceDownloader.availableVoices` or the
     /// download will 404 — `requiredVoices` is what the installer fetches.
+    /// Every drone must appear here. A category missing from this map falls through
+    /// to `pulsarVoice`, which does not fail — it just makes that drone sound
+    /// exactly like Pulsar, which is worse than an error because nothing reports it.
+    /// `vector` was missing and did precisely that.
+    ///
+    /// Casting notes, applying Justin's calls where Kokoro can:
+    ///   • sentinel → af_sarah: he asked for "the californian". American female.
+    ///   • nova     → bf_emma:  he asked for Irish. KOKORO HAS NO IRISH VOICE — the
+    ///     voice ids encode accent as American (a) or British (b) only. bf_emma is
+    ///     the nearest warm non-American female. Flagged rather than silently
+    ///     substituted.
+    ///   • nebula   → bf_alice: freed by sentinel's move.
+    ///   • atlas    → am_fenrir: the gruffest male in the installed set.
+    ///   • vector   → af_kore: her own voice, so she stops sounding like Pulsar.
     static let droneVoices: [String: String] = [
         "voyager":  "am_onyx",
-        "sentinel": "bf_alice",
-        "nova":     "af_sarah",
-        "nebula":   "bf_emma",
+        "sentinel": "af_sarah",
+        "nova":     "bf_emma",
+        "nebula":   "bf_alice",
         "echo":     "am_puck",
         "atlas":    "am_fenrir",
         "iris":     "af_heart",
         "meridian": "bm_george",
+        "vector":   "af_kore",
     ]
 
     /// Pulsar's own voice — British male, keeps the Daniel continuity.

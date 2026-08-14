@@ -113,11 +113,18 @@ for k in ("description", "prompt", "task", "message"):
         task_text += " " + v
 prompt = task_text.lower()
 
-CAST = "voyager|sentinel|nova|nebula|echo|iris|atlas|meridian"
+# All TEN drones. This was the original eight and silently failed to categorise
+# the two added since: `vector` (the Product Manager seat) and `pulsar` (who
+# became a spawnable category with a real DroneRegistry entry). A spawn whose
+# category does not match here falls through uncategorised — no drone head, no
+# voice, and nothing reports it.
+CAST = "pulsar|voyager|sentinel|nova|nebula|echo|iris|atlas|meridian|vector"
 
 # Static agent_type -> drone map. Keys cover the named agent types plus their
 # canonical roles, so "Explore"/"explorer", "review"/"reviewer", etc. all land.
 TYPE_MAP = {
+    "product": "vector", "pm": "vector", "spec": "vector", "prd": "vector",
+    "scope": "vector", "roadmap": "vector", "prioritisation": "vector",
     "explore": "voyager", "explorer": "voyager",
     "review": "sentinel", "reviewer": "sentinel", "security-review": "sentinel",
     "analyst": "sentinel", "analysis": "sentinel", "analytics": "sentinel",

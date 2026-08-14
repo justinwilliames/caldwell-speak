@@ -655,3 +655,73 @@ struct ClaudeIntegrationInstaller {
         return "added"
     }
 }
+
+// MARK: - Full removal of Pulsar's own state
+
+/// Everything Pulsar leaves on the machine that `uninstall()` does NOT touch.
+///
+/// `uninstall()` unwires `~/.claude` and stops there, which left 318MB of Kokoro
+/// weights, a live 256-bit daemon token, a 502KB transcript of everything the
+/// machine has ever said, and — worst — a registered LaunchAgent with
+/// `RunAtLoad=true` still pointing at `/Applications/Pulsar.app`. Trash the app and
+/// launchd keeps trying to start a binary that is not there, at every login,
+/// forever. Leftover files are untidy; leftover state that keeps ACTING is a bug.
+enum PulsarStateRemover {
+    /// What a full removal would delete, for confirmation before doing it.
+    static func inventory() -> [(label: String, path: URL, bytes: Int64)] {
+        let fm = FileManager.default
+        let home = fm.homeDirectoryForCurrentUser
+        let candidates: [(String, URL)] = [
+            ("Voice model + caches", PulsarConfig.shared.storageRoot),
+            ("Daemon token + speech log", home.appendingPathComponent(".pulsar")),
+            ("Launch agent", launchAgentPlist),
+        ]
+        return candidates.compactMap { label, url in
+            guard fm.fileExists(atPath: url.path) else { return nil }
+            return (label, url, directorySize(url))
+        }
+    }
+
+    static var launchAgentPlist: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/LaunchAgents/team.yourorbit.Pulsar.plist")
+    }
+
+    /// Unregister the agent FIRST, then delete state. Order matters: removing the
+    /// plist without a bootout leaves the job registered until the next login.
+    static func removeAll() {
+        let fm = FileManager.default
+        let uid = getuid()
+        let bootout = Process()
+        bootout.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+        bootout.arguments = ["bootout", "gui/\(uid)/team.yourorbit.Pulsar"]
+        bootout.standardOutput = FileHandle.nullDevice
+        bootout.standardError = FileHandle.nullDevice
+        try? bootout.run()
+        bootout.waitUntilExit()
+
+        for entry in inventory() {
+            do {
+                try fm.removeItem(at: entry.path)
+                NSLog("[PulsarState] removed \(entry.label) at \(entry.path.path)")
+            } catch {
+                NSLog("[PulsarState] could not remove \(entry.path.path): \(error)")
+            }
+        }
+    }
+
+    private static func directorySize(_ url: URL) -> Int64 {
+        let fm = FileManager.default
+        var isDir: ObjCBool = false
+        guard fm.fileExists(atPath: url.path, isDirectory: &isDir) else { return 0 }
+        if !isDir.boolValue {
+            return (try? fm.attributesOfItem(atPath: url.path)[.size] as? NSNumber)??.int64Value ?? 0
+        }
+        guard let e = fm.enumerator(at: url, includingPropertiesForKeys: [.fileSizeKey]) else { return 0 }
+        var total: Int64 = 0
+        for case let f as URL in e {
+            total += Int64((try? f.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+        }
+        return total
+    }
+}

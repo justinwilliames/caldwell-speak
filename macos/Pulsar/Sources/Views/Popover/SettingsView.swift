@@ -59,8 +59,13 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Kokoro — on-device")
                     .font(.caption.weight(.medium))
+                // "macOS voices keep working either way" was true when Kokoro was
+                // opt-in alongside the `say` engine. It is now the ONLY engine, so
+                // that sentence promised a fallback that no longer exists — and it
+                // sat directly above a Download button the user might reasonably
+                // skip because of it.
                 Text("A neural voice that runs entirely on this Mac. Nothing is sent anywhere. "
-                     + "One 315 MB download; macOS voices keep working either way.")
+                     + "One 315 MB download — required, as it is the only voice Pulsar uses.")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -93,10 +98,13 @@ struct SettingsView: View {
 
             case .installed:
                 HStack(alignment: .top, spacing: 10) {
-                    Toggle("", isOn: kokoroEnabledBinding)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
+                    // No on/off switch: Kokoro is the only engine. A toggle here
+                    // would offer a choice that no longer exists, and the "off"
+                    // position used to mean "speak in macOS voices" — the exact
+                    // behaviour this build removes.
+                    Image(systemName: "checkmark.seal.fill")
+                        .foregroundStyle(.green)
+                        .font(.system(size: 13))
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Use Kokoro")
                             .font(.caption.weight(.medium))
@@ -136,19 +144,6 @@ struct SettingsView: View {
     /// Engine switch. Writes the config directly rather than going through the
     /// daemon's /settings PATCH — the model lives on this side of the process and
     /// the toggle must also warm/unload it, which the HTTP surface knows nothing about.
-    private var kokoroEnabledBinding: Binding<Bool> {
-        Binding(
-            get: { VoiceEngine.selected == .kokoro },
-            set: { on in
-                try? PulsarConfig.shared.set(PulsarConfig.voiceEngineKey,
-                                             value: (on ? VoiceEngine.kokoro : .native).rawValue)
-                PulsarConfig.shared.reload()
-                // Loading ~315MB takes seconds; do it on the switch, not on the
-                // first line, or the first thing the user hears is a long silence.
-                if on { KokoroVoiceClient.warm() } else { KokoroVoiceClient.unload() }
-            }
-        )
-    }
 
     // MARK: - Claude Code integration (one-click installer)
 
@@ -171,13 +166,20 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Button(action: installClaudeIntegration) {
-                Label(isInstalling ? "Installing…" : "Set up Pulsar in Claude Code",
-                      systemImage: "wand.and.stars")
+            if integrationInstalled && !isInstalling {
+                doneBadge("Installed — skill and hooks are wired.")
+                Button("Re-install") { installClaudeIntegration() }
+                    .buttonStyle(.borderless)
+                    .controlSize(.small)
+            } else {
+                Button(action: installClaudeIntegration) {
+                    Label(isInstalling ? "Installing…" : "Set up Pulsar in Claude Code",
+                          systemImage: "wand.and.stars")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(isInstalling)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .disabled(isInstalling)
 
             // After a successful install the one required action is a Claude Code
             // restart — surface it as a one-click button, not just a sentence.
@@ -307,11 +309,65 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            if personaInstalled {
+                doneBadge("Added to your CLAUDE.md.")
+            }
             Button(action: copyPersonaPrompt) {
                 Label("Copy Pulsar persona for your Claude", systemImage: "doc.on.clipboard")
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
+        }
+    }
+
+
+    // MARK: - "Is it already done?" detection
+    //
+    // Both of these buttons used to look identical whether or not the work had
+    // been done — so a fully wired machine still showed a bare "Set up Pulsar"
+    // call to action, and the only way to know was to run it again and see.
+    // Detection is cheap and the answer is on disk; there is no excuse for asking
+    // the user to remember.
+
+    /// The Claude Code integration is installed when BOTH halves are present: the
+    /// skill on disk AND at least one Pulsar hook actually wired into settings.json.
+    /// Checking only the skill directory would report success for a half-install
+    /// where the files copied but the hook wiring failed — which is the failure
+    /// mode most likely to leave Pulsar silent.
+    private var integrationInstalled: Bool {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let skill = home.appendingPathComponent(".claude/skills/pulsar/SKILL.md")
+        guard FileManager.default.fileExists(atPath: skill.path) else { return false }
+        let settings = home.appendingPathComponent(".claude/settings.json")
+        guard let data = try? Data(contentsOf: settings),
+              let text = String(data: data, encoding: .utf8) else { return false }
+        // Match any Pulsar hook script, not one specific install path. Justin's
+        // own machine wires the hooks straight at the git checkout
+        // (~/code/pulsar/scripts/...) rather than the copied skill directory, and a
+        // marker that only recognised the copy reported "not installed" on a
+        // machine that was fully, correctly wired.
+        let markers = ["skills/pulsar/scripts", "pulsar/scripts/stop-hook.sh",
+                       "pulsar/scripts/session-start-voice.sh",
+                       "pulsar/scripts/subagent-start.sh"]
+        return markers.contains { text.contains($0) }
+    }
+
+    /// The persona is installed when the user's CLAUDE.md carries the block this
+    /// button copies. Matched on the heading, which is stable and unique.
+    private var personaInstalled: Bool {
+        let md = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/CLAUDE.md")
+        guard let data = try? Data(contentsOf: md),
+              let text = String(data: data, encoding: .utf8) else { return false }
+        return text.contains("Persona: Pulsar")
+    }
+
+    /// A green seal + label, shown in place of a call to action once the thing is done.
+    @ViewBuilder
+    private func doneBadge(_ label: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+            Text(label).font(.caption2).foregroundStyle(.secondary)
         }
     }
 
@@ -332,10 +388,6 @@ struct SettingsView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .tracking(0.5)
-
-            if viewModel.settings?.enhancedInstalled == false {
-                installNudge
-            }
 
             HStack(alignment: .top, spacing: 10) {
                 Toggle("", isOn: floatingHeadEnabledBinding)
@@ -452,31 +504,6 @@ struct SettingsView: View {
         return "Polite — clean professional status lines. Default."
     }
 
-    @ViewBuilder
-    private var installNudge: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Tip: install Daniel (Enhanced) for a warmer local voice")
-                .font(.caption2.weight(.medium))
-            Text("System Settings → Accessibility → Spoken Content → System Voice → Manage Voices → English (UK). Until then Pulsar uses the basic Daniel.")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .fixedSize(horizontal: false, vertical: true)
-            Button("Open Spoken Content settings") { openSpokenContentSettings() }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-        }
-        .padding(8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.blue.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
-    }
-
-    private func openSpokenContentSettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.universalaccess?SpokenContent") {
-            NSWorkspace.shared.open(url)
-        }
-    }
-
     // MARK: - Recovery banners (every silent state gets a visible, actionable cue)
 
     @ViewBuilder
@@ -489,11 +516,21 @@ struct SettingsView: View {
                     Task { await viewModel.toggleMute() }
                 }
             }
-            if viewModel.settings?.enhancedInstalled == false {
-                recoveryBanner(icon: "arrow.down.circle",
-                               text: "Using basic Daniel — install Daniel (Enhanced) for a warmer voice.",
-                               actionLabel: "Install", tint: .blue) {
-                    openSpokenContentSettings()
+            // THE ONE THAT MATTERS: no weights means no voice at all.
+            //
+            // Kokoro is now the only engine, so a missing model is total silence —
+            // and it was completely invisible. Every hook call still returned
+            // success, /speak still answered "queued" (it responds before the async
+            // synth that later fails), and markFailed() only wrote to NSLog. The
+            // user got a working-looking app that never spoke and no way to find
+            // out why. Removing the macOS fallback closed a masquerade and opened
+            // this; it needs to shout.
+            if !VoiceEngine.isReady {
+                recoveryBanner(icon: "exclamationmark.triangle.fill",
+                               text: "No voice model installed — Pulsar cannot speak. "
+                                   + "Download the Kokoro voice below.",
+                               actionLabel: "Download", tint: .red) {
+                    kokoro.download()
                 }
             }
         }

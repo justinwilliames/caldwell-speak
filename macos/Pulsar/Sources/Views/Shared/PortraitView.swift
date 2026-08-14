@@ -54,10 +54,23 @@ struct PortraitView: View {
     // MARK: Blink state (driven off the timeline clock)
     @State private var nextBlinkAt: Double = 0       // seeded on first tick
     @State private var blinkStart: Double = -1       // -1 = not blinking
+    @State private var quietSince: Double = -1       // when amplitude last fell silent
 
     /// A blink lasts ~120ms (down + up). Only fire when amplitude is below this.
     private let blinkDuration: Double = 0.12
     private let speechFloor: CGFloat = 0.05
+
+    /// How long the amplitude must STAY down before a blink is allowed.
+    ///
+    /// Instantaneous amplitude is not enough to tell "between lines" from "between
+    /// sentences". Kokoro renders a line sentence by sentence and joins them with a
+    /// 320ms gap, during which amplitude is flat zero — so the old gate fired blinks
+    /// mid-sentence. Justin caught Meridian doing it on a two-sentence line.
+    /// Blinking is for when a drone is PASSIVE, so require the quiet to outlast any
+    /// gap inside a line: 800ms clears Kokoro's 320ms join with room to spare, and
+    /// is still short enough that a resting drone blinks naturally.
+    private let passiveQuietPeriod: Double = 0.8
+
 
     /// The portrait clip/stroke shape — a continuous-curvature squircle (rounded
     /// rect, iOS-style superellipse) rather than a hard circle. Corner radius
@@ -77,6 +90,8 @@ struct PortraitView: View {
 
                     // Blink overlay — the eyes-closed frame faded in briefly over
                     // the (closed) mouth frame during a pause.
+                    // Blink overlay — the eyes-closed frame faded in briefly over
+                    // the (closed) mouth frame during a pause.
                     if let blinkFrame, blink > 0 {
                         Image(nsImage: blinkFrame)
                             .resizable()
@@ -92,8 +107,19 @@ struct PortraitView: View {
             .clipShape(squircle)
             .overlay {
                 if amplitude > 0 {
+                    // strokeBorder, not stroke: `stroke` centres the line on the
+                    // path, so 1pt of a 2pt line falls OUTSIDE the clipShape. While
+                    // a passive head bobs by fractional points that outer half lands
+                    // on a different pixel each frame and flickers as a 1px sliver
+                    // down one edge. strokeBorder insets the line fully inside the
+                    // shape, so it is clipped identically every frame.
+                    // lineWidth 1, not 2. `stroke` used to centre a 2pt line on the
+                    // path and the clipShape hid the outer half, so only ~1pt ever
+                    // showed. Switching to strokeBorder put the full 2pt inside the
+                    // shape and the speaking border suddenly read twice as heavy.
+                    // 1pt restores the weight that was actually on screen before.
                     squircle
-                        .stroke(voiceColor.opacity(0.6), lineWidth: 2)
+                        .strokeBorder(voiceColor.opacity(0.6), lineWidth: 1)
                         .shadow(color: voiceColor.opacity(0.4), radius: 6)
                 }
             }
@@ -173,8 +199,17 @@ struct PortraitView: View {
         let k = 1 - pow(0.001, dt)        // fast but smooth follow
         smoothedAmp += (target - smoothedAmp) * k
 
-        // Start a blink only in a pause (low amplitude) once the timer elapses.
-        if blinkStart < 0 && t >= nextBlinkAt && smoothedAmp < speechFloor {
+        // Track how long we have been quiet. Any sound at all restarts the clock,
+        // so a 320ms inter-sentence gap never accumulates into a "passive" state.
+        if smoothedAmp >= speechFloor {
+            quietSince = -1
+        } else if quietSince < 0 {
+            quietSince = t
+        }
+        let passive = quietSince >= 0 && (t - quietSince) >= passiveQuietPeriod
+
+        // Start a blink only when genuinely passive, once the timer elapses.
+        if blinkStart < 0 && t >= nextBlinkAt && passive {
             blinkStart = t
         }
         // End the blink and schedule the next, varied so it isn't metronomic.
@@ -182,6 +217,7 @@ struct PortraitView: View {
             blinkStart = -1
             nextBlinkAt = t + Double.random(in: 3.5...5.5)
         }
+
         // If the timer elapsed while speaking, keep pushing it out so the blink
         // lands in the next genuine pause rather than the instant speech stops.
         if blinkStart < 0 && t >= nextBlinkAt && smoothedAmp >= speechFloor {

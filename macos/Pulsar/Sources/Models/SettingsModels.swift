@@ -1,13 +1,15 @@
 import Foundation
 
+// macOS voice fields are GONE from this model. Kokoro is the only engine, so
+// `native_voice`, `enhanced_installed` and a 68-entry `available_voices` catalogue
+// described a path the app can no longer take — and the UI was still rendering a
+// nudge from them, pointing users at System Settings to install a voice nothing
+// would ever use.
 struct DaemonSettings: Codable, Sendable {
     let muted: Bool?
     /// Whether Potty Mouth mode is on (true) or Polite (false, default).
     let expletivesEnabled: Bool?
-    /// The macOS voice the native path resolves to (e.g. "Daniel (Enhanced)").
-    let nativeVoice: String?
     /// Whether the neural Enhanced Daniel is installed (drives the install nudge).
-    let enhancedInstalled: Bool?
     /// Whether cached "canon" pings are on (notification-style) vs bespoke-only.
     let canonEnabled: Bool?
     /// Whether the animated floating Pulsar head is shown on screen while it
@@ -21,7 +23,6 @@ struct DaemonSettings: Codable, Sendable {
     let showActiveAgents: Bool?
     /// Installed local voices usable in free mode (drives the voice picker),
     /// each with a "Name (Language, Region)" label.
-    let availableVoices: [NativeVoiceClient.VoiceOption]?
     /// The synthesiser actually in use — "native" or "kokoro". Already degraded by
     /// the daemon, so this is what will speak, not merely what was selected.
     let voiceEngine: String?
@@ -33,13 +34,10 @@ struct DaemonSettings: Codable, Sendable {
     enum CodingKeys: String, CodingKey {
         case muted
         case expletivesEnabled = "expletives_enabled"
-        case nativeVoice = "native_voice"
-        case enhancedInstalled = "enhanced_installed"
         case canonEnabled = "canon_enabled"
         case floatingHeadEnabled = "floating_head_enabled"
         case subtitlesEnabled = "subtitles_enabled"
         case showActiveAgents = "show_active_agents"
-        case availableVoices = "available_voices"
         case voiceEngine = "voice_engine"
         case kokoroSupported = "kokoro_supported"
         case kokoroInstalled = "kokoro_installed"
@@ -49,13 +47,10 @@ struct DaemonSettings: Codable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.muted = try container.decodeIfPresent(Bool.self, forKey: .muted)
         self.expletivesEnabled = try container.decodeIfPresent(Bool.self, forKey: .expletivesEnabled)
-        self.nativeVoice = try container.decodeIfPresent(String.self, forKey: .nativeVoice)
-        self.enhancedInstalled = try container.decodeIfPresent(Bool.self, forKey: .enhancedInstalled)
         self.canonEnabled = try container.decodeIfPresent(Bool.self, forKey: .canonEnabled)
         self.floatingHeadEnabled = try container.decodeIfPresent(Bool.self, forKey: .floatingHeadEnabled)
         self.subtitlesEnabled = try container.decodeIfPresent(Bool.self, forKey: .subtitlesEnabled)
         self.showActiveAgents = try container.decodeIfPresent(Bool.self, forKey: .showActiveAgents)
-        self.availableVoices = try container.decodeIfPresent([NativeVoiceClient.VoiceOption].self, forKey: .availableVoices)
         self.voiceEngine = try container.decodeIfPresent(String.self, forKey: .voiceEngine)
         self.kokoroSupported = try container.decodeIfPresent(Bool.self, forKey: .kokoroSupported)
         self.kokoroInstalled = try container.decodeIfPresent(Bool.self, forKey: .kokoroInstalled)

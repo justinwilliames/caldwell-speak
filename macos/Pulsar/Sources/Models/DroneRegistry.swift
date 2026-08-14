@@ -72,7 +72,11 @@ enum DroneRegistry {
     ///   • iris     (F, marketing: brand/paid/search/SEO/content/lifecycle) → Tessa (en-ZA) —
     ///     clear + warm, the welcoming communicator (took Tessa from Echo in the
     ///     2026-07-20 stock-voice shuffle)
-    ///   • meridian (M, legal counsel)        → Ralph    (en-US) — deep, slow, measured;
+    ///   • vector   (F, product manager)      → Kore     (af_kore) — clear, decisive; the
+///     tenth seat, added 2026-08-13. Earned the slot because no sibling reaches its
+///     evidence: Sentinel reads the numbers and Pulsar sequences the work, but nobody
+///     owned "should we build this, and what does done mean".
+///   • meridian (M, legal counsel)        → Ralph    (en-US) — deep, slow, measured;
     ///     legacy but whitelisted (like Junior), the last humanoid timbre in the stock
     ///     set. Fits the senior-counsel persona; speaks only when --with-legal summons
     ///     him in team reviews, so the legacy rasp gets minimal ear-time.
@@ -86,23 +90,60 @@ enum DroneRegistry {
     /// Motion: each character moves to its persona — explorer restless+fast,
     /// reviewer near-still, builder bouncy, artist smooth/flowing, writer steady,
     /// generalist neutral.
+
+    /// PRONOUNS, so no agent has to guess — and so none of them guesses wrong.
+    ///
+    /// Sentinel kept being written and spoken about as "he" by her own colleagues.
+    /// The cast's gender is carried implicitly by the voice id and the portrait,
+    /// which is exactly the kind of thing a text-only agent cannot see, so it was
+    /// inferred from the name and inferred wrongly. State it.
+    static let pronouns: [String: String] = [
+        "pulsar": "he/him",
+        "voyager": "he/him",
+        "sentinel": "she/her",
+        "nova": "she/her",
+        "nebula": "she/her",
+        "echo": "he/him",
+        "atlas": "he/him",
+        "iris": "she/her",
+        "meridian": "he/him",
+        "vector": "she/her",
+    ]
+
+    /// The pronouns for a drone, defaulting to they/them when the category is
+    /// unknown — never a guess from the name.
+    static func pronouns(for category: String?) -> String {
+        guard let c = category?.lowercased() else { return "they/them" }
+        return pronouns[c] ?? "they/them"
+    }
+
     static let drones: [Drone] = [
-        Drone(category: "voyager",  role: "explorer",   color: Color(red: 0.95, green: 0.66, blue: 0.23), voice: "Fred",     badge: "E",
+        // Pulsar is a DRONE like every other, not a privileged seat (Justin,
+        // 2026-08-13). He previously had NO registry record at all — his title
+        // lived only in RosterView — so every lookup for "pulsar" fell through
+        // to the defaults, which is exactly why a spawned pulsar rendered as a
+        // second, duplicate Pulsar head. A real record is the fix, and it makes
+        // him spawnable and interchangeable from any session like the rest.
+        Drone(category: "pulsar",   role: "Chief of Staff",       color: Color(red: 0.263, green: 0.388, blue: 0.847), voice: "Daniel",   badge: "C",
+              motion: MotionTrait(bobAmplitude: 1.6, bobFrequency: 0.9,  activeScale: 2.4)),  // indigo — composed, unhurried
+        Drone(category: "voyager",  role: "Data & Analytics",   color: Color(red: 0.961, green: 0.510, blue: 0.192), voice: "Fred",     badge: "E",
               motion: MotionTrait(bobAmplitude: 3.4, bobFrequency: 1.35, activeScale: 2.5)),  // amber — restless, wide, fast
-        Drone(category: "sentinel", role: "analyst",    color: Color(red: 0.42, green: 0.72, blue: 0.92), voice: "Karen",    badge: "R",
+        Drone(category: "sentinel", role: "QA & Security",    color: Color(red: 0.275, green: 0.941, blue: 0.941), voice: "Karen",    badge: "R",
               motion: MotionTrait(bobAmplitude: 0.8, bobFrequency: 0.6,  activeScale: 2.3)),  // azure — still, minimal
-        Drone(category: "nova",     role: "builder",    color: Color(red: 0.36, green: 0.82, blue: 0.42), voice: "Samantha", badge: "B",
+        Drone(category: "nova",     role: "Software Engineer",    color: Color(red: 0.235, green: 0.706, blue: 0.294), voice: "Samantha", badge: "B",
               motion: MotionTrait(bobAmplitude: 2.6, bobFrequency: 1.6,  activeScale: 2.45)), // green — busy, bouncy
-        Drone(category: "nebula",   role: "artist",     color: Color(red: 0.91, green: 0.36, blue: 0.82), voice: "Moira",    badge: "A",
+        Drone(category: "nebula",   role: "Product Designer",     color: Color(red: 0.941, green: 0.196, blue: 0.902), voice: "Moira",    badge: "A",
               motion: MotionTrait(bobAmplitude: 2.4, bobFrequency: 0.85, activeScale: 2.4)),  // magenta — smooth, flowing
-        Drone(category: "echo",     role: "writer",     color: Color(red: 0.18, green: 0.75, blue: 0.72), voice: "Junior",   badge: "W",
+        Drone(category: "echo",     role: "Product Marketing & Docs",     color: Color(red: 0.737, green: 0.965, blue: 0.047), voice: "Junior",   badge: "W",
               motion: MotionTrait(bobAmplitude: 1.6, bobFrequency: 1.0,  activeScale: 2.4)),  // teal — steady
-        Drone(category: "atlas",    role: "generalist", color: Color(red: 0.50, green: 0.25, blue: 0.75), voice: "Rishi",    badge: "G",
+        Drone(category: "atlas",    role: "Platform & SRE", color: Color(red: 0.902, green: 0.098, blue: 0.294), voice: "Rishi",    badge: "G",
               motion: MotionTrait(bobAmplitude: 2.0, bobFrequency: 0.9,  activeScale: 2.4)),  // deep grape #8040C0 — ΔE>34 from both pulsar-indigo + nebula-magenta
-        Drone(category: "iris",     role: "marketer",   color: Color(red: 0.949, green: 0.380, blue: 0.471), voice: "Tessa",   badge: "M",
+        Drone(category: "iris",     role: "Growth & Lifecycle",   color: Color(red: 0.980, green: 0.745, blue: 0.745), voice: "Tessa",   badge: "M",
               motion: MotionTrait(bobAmplitude: 2.2, bobFrequency: 1.15, activeScale: 2.45)), // coral-rose #F26178 — warm, rhythmic; ΔE76≥51 from every sibling
-        Drone(category: "meridian", role: "counsel",    color: Color(red: 0.141, green: 0.259, blue: 0.478), voice: "Ralph",   badge: "L",
+        Drone(category: "meridian", role: "General Counsel",    color: Color(red: 0.569, green: 0.118, blue: 0.706), voice: "Ralph",   badge: "L",
               motion: MotionTrait(bobAmplitude: 1.0, bobFrequency: 0.5,  activeScale: 2.3)),  // deep navy #24427A — near-still, slowest of the cast (counsel doesn't fidget); min ΔE76 41.8 vs pulsar-indigo
+        Drone(category: "vector",   role: "Product Manager",  color: Color(red: 1.000, green: 0.882, blue: 0.098), voice: "Kore",     badge: "P",
+              motion: MotionTrait(bobAmplitude: 1.8, bobFrequency: 0.8,  activeScale: 2.4)),  // signal red #FF3B1F — the only warm-red lane; min ΔE76 45.9 (nearest iris-coral), well clear of the 40 bar
         // "unknown" — a neutral catch-all for unrecognised agent categories.
         // Desaturated mid-grey rim so it reads as "generic agent" without competing
         // with any named drone hue. Shares Daniel's voice (Pulsar's), but voice does
@@ -211,4 +252,64 @@ func droneBadge(for category: String?) -> String? {
 /// The signature motion trait for a category (its own, else Pulsar's neutral).
 func droneMotion(for category: String?) -> DroneRegistry.MotionTrait {
     DroneRegistry.motion(for: category)
+}
+
+// MARK: - Legible-on-surface accents
+
+/// A drone's accent adjusted until it is READABLE AS TEXT on the current surface.
+///
+/// The cast palette is chosen for mutual distinctness against a BLACK portrait
+/// background. That is a different job from being legible as small text on a light
+/// panel, and measured against white the raw accents are indefensible: six of ten
+/// fail even the 3:1 large-text bar, and Echo's lime sits at 1.29:1 — effectively
+/// invisible. Colour is also the ONLY channel carrying the role label, so a reader
+/// who cannot resolve it loses the information entirely.
+///
+/// So the identity (hue) is preserved and only the lightness moves, stepping the
+/// colour darker on a light surface (or lighter on a dark one) until it clears the
+/// WCAG AA contrast bar. The portrait ring and glow keep the raw accent, because
+/// there it sits on black and is decoration rather than text.
+extension Color {
+    /// Relative luminance per WCAG 2.1.
+    private static func luminance(_ c: NSColor) -> Double {
+        guard let s = c.usingColorSpace(.sRGB) else { return 0 }
+        func lin(_ v: CGFloat) -> Double {
+            let d = Double(v)
+            return d <= 0.03928 ? d / 12.92 : pow((d + 0.055) / 1.055, 2.4)
+        }
+        return 0.2126 * lin(s.redComponent)
+             + 0.7152 * lin(s.greenComponent)
+             + 0.0722 * lin(s.blueComponent)
+    }
+
+    private static func contrast(_ a: NSColor, _ b: NSColor) -> Double {
+        let la = luminance(a), lb = luminance(b)
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+    }
+
+    /// This colour, darkened or lightened just enough to reach `target` contrast
+    /// against `background`. Hue and saturation are untouched, so the drone stays
+    /// recognisably itself.
+    func legible(on background: NSColor, target: Double = 4.5) -> Color {
+        guard let base = NSColor(self).usingColorSpace(.sRGB) else { return self }
+        if Color.contrast(base, background) >= target { return self }
+
+        // Darken on a light surface, lighten on a dark one.
+        let goDarker = Color.luminance(background) > 0.5
+        var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        base.getHue(&h, saturation: &s, brightness: &b, alpha: &a)
+
+        var best = base
+        for step in 1...20 {
+            let f = CGFloat(step) / 20
+            let nb = goDarker ? b * (1 - f) : b + (1 - b) * f
+            // Deepening a colour without lifting saturation reads as muddy grey.
+            let ns = goDarker ? min(1, s + f * 0.25) : max(0, s - f * 0.35)
+            let candidate = NSColor(hue: h, saturation: ns, brightness: nb, alpha: a)
+            guard let srgb = candidate.usingColorSpace(.sRGB) else { continue }
+            best = srgb
+            if Color.contrast(srgb, background) >= target { break }
+        }
+        return Color(nsColor: best)
+    }
 }

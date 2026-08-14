@@ -1219,54 +1219,6 @@ actor AudioQueueActor {
 
     // MARK: - Playback
 
-    /// Zero-cost voice fallback: speak `text` via the macOS `say` command in a
-    /// British voice when ElevenLabs synthesis is unavailable, so Pulsar never
-    /// goes silent on a failed fetch. Voice overridable via the
-    /// PULSAR_FALLBACK_VOICE env var (default "Daniel"). Best-effort — launch
-    /// errors are logged and swallowed. Reuses `currentProcess` so --skip can
-    /// interrupt it like any premium line.
-    private func speakNative(_ text: String) async {
-        // Honour the global mute exactly like the premium voice. Mute is already
-        // enforced upstream at /speak (muted requests never enqueue), so muted
-        // lines normally never reach here — but this guard also catches the
-        // race where the user mutes mid-flight, after a line was queued. A mute
-        // silences Daniel, not just ElevenLabs.
-        guard !PulsarConfig.shared.isMuted else {
-            NSLog("[AudioQueue] native say fallback suppressed — muted")
-            return
-        }
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        let voice = NativeVoiceClient.bestVoice()
-        NSLog("[AudioQueue] native say last-ditch voice=\(voice)")
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/say")
-        process.arguments = ["-v", voice, "-r", String(NativeVoiceClient.defaultRate), trimmed]
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
-        currentProcess = process
-        // Register the live child so app teardown can kill it synchronously.
-        LiveAudioProcesses.shared.register(process)
-        defer { LiveAudioProcesses.shared.unregister(process) }
-        do {
-            // Same non-blocking wait as playEntry: resume from the termination
-            // handler, never from a blocking `waitUntilExit()` on a pool thread.
-            let box = ContinuationBox()
-            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-                box.cont = cont
-                process.terminationHandler = { _ in box.resume() }
-                do {
-                    try process.run()
-                } catch {
-                    process.terminationHandler = nil
-                    box.resume(throwing: error)
-                }
-            }
-        } catch {
-            NSLog("[AudioQueue] native say fallback failed: \(error)")
-        }
-        currentProcess = nil
-    }
 
     /// Mute-gate for a line that is already OUT of the queue: hold it instead of
     /// destroying it. Returns true when the entry was held and the caller must
@@ -1307,8 +1259,15 @@ actor AudioQueueActor {
             // ElevenLabs spend. Mute is enforced upstream at /speak (muted
             // requests never enqueue), so reaching here means the user wants to
             // hear Pulsar and only the premium voice failed.
-            NSLog("[AudioQueue] fetch failed for \(entry.id) — native say fallback")
-            await speakNative(entry.text)
+            // NO NATIVE FALLBACK. Kokoro is the only engine (Justin, 2026-08-14:
+            // "remove MacOS voices — make Kokoro compulsory"), and this path was a
+            // leftover from the ElevenLabs era that removing the macOS engine from
+            // VoiceEngine did not touch. It spoke failed lines through /usr/bin/say
+            // in Daniel while recording them as failed — so the user heard a macOS
+            // voice with no drone attached to it, which is exactly what it sounds
+            // like: something broken. A line that cannot be spoken in its own
+            // character's voice is now silent and logged, not impersonated.
+            NSLog("[AudioQueue] synth failed for \(entry.id) — line dropped (no fallback engine)")
             await broadcastIdleIfQueueEmpty()
             let historyItem = recordHistory(entry: entry, duration: nil, failed: true)
             await broadcaster.broadcast(
@@ -1398,10 +1357,26 @@ actor AudioQueueActor {
                     return
                 }
                 // Effective-end cutoff: stop afplay before trailing silence.
+                //
+                // Two corrections, both paid for in clipped final words:
+                //
+                // 1. The timer starts at process.run(), but afplay does not start
+                //    SOUNDING for a few hundred ms — it opens the file and the audio
+                //    device first. Sleeping `cutoff` from launch therefore kills the
+                //    clip ~that much BEFORE its speech actually ends. Add the startup
+                //    allowance so the cutoff is measured against audible time.
+                // 2. Only cut when the trailing silence is worth cutting. The early
+                //    kill was written for a cloud voice that padded every clip with
+                //    dead air; local `say` and Kokoro barely pad at all, so on most
+                //    lines this fired to save a few hundredths of a second and risked
+                //    the last word to do it. Below the floor, let the file finish.
+                let startupAllowance = 0.35
+                let worthCutting = 1.0
                 if let cutoff = effectiveDuration, cutoff > 0,
-                   fileDuration == nil || cutoff < (fileDuration ?? 0) - 0.05 {
+                   let fd = fileDuration, fd - cutoff >= worthCutting {
                     Task { [weak self] in
-                        try? await Task.sleep(nanoseconds: UInt64(cutoff * 1_000_000_000))
+                        let deadline = cutoff + startupAllowance
+                        try? await Task.sleep(nanoseconds: UInt64(deadline * 1_000_000_000))
                         await self?.terminateIfRunning(process)
                     }
                 }
@@ -1547,6 +1522,38 @@ actor AudioQueueActor {
         } catch {
             NSLog("[AudioQueue] retain history audio failed for \(id): \(error)")
         }
+        pruneHistoryAudioBySize()
+    }
+
+    /// Byte ceiling on the replay store, evicting oldest-first.
+    ///
+    /// The history ring is capped at 200 ENTRIES, which bounds the count and not
+    /// the disk. Kokoro writes raw 24kHz PCM WAV (under an .mp3 name), measured at
+    /// 210-476KB per line — so a full ring projects to 42-95MB and grows during
+    /// ordinary use with nothing to stop it. The phrase cache next door has had a
+    /// 50MB ceiling all along; this store never got one.
+    private static let historyBytesMax: Int64 = 25 * 1024 * 1024
+
+    private func pruneHistoryAudioBySize() {
+        let dir = PulsarConfig.shared.historyAudioDir
+        let fm = FileManager.default
+        guard let names = try? fm.contentsOfDirectory(atPath: dir.path) else { return }
+        var files: [(url: URL, size: Int64, date: Date)] = []
+        for n in names where n.hasSuffix(".mp3") {
+            let u = dir.appendingPathComponent(n)
+            guard let a = try? fm.attributesOfItem(atPath: u.path) else { continue }
+            files.append((u,
+                          (a[.size] as? NSNumber)?.int64Value ?? 0,
+                          (a[.modificationDate] as? Date) ?? .distantPast))
+        }
+        var total = files.reduce(Int64(0)) { $0 + $1.size }
+        guard total > Self.historyBytesMax else { return }
+        for f in files.sorted(by: { $0.date < $1.date }) {
+            try? fm.removeItem(at: f.url)
+            total -= f.size
+            if total <= Self.historyBytesMax { break }
+        }
+        NSLog("[AudioQueue] history audio pruned to \(total / 1024 / 1024)MB")
     }
 
     private func deleteHistoryAudio(id: String) {

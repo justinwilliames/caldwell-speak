@@ -58,6 +58,14 @@ Claude Code spawns sub-agents to fan work out — one to search the codebase, an
 
 **The characters are fictional.** Pulsar, Voyager, Sentinel, Nova, Nebula, Echo, Iris, Atlas, and Meridian are invented lenses — names, voices, and faces given to Claude Code's sub-agents so you can tell the work apart by ear and on screen. None of them is a real person, an employee, or a portrait of anyone; any background or opinion a drone voices is a costume for the job it's doing, not a claim about a human being. If a real person happens to share one of these names, nothing said here is theirs.
 
+**The portraits are AI-generated.** Every character portrait and lip-sync frame in this
+app is synthetic imagery, generated with Google `gemini-3-pro-image` from prompts written
+in this repository — no photographs of real people were used as inputs. The characters are
+invented, and no likeness clearance has been run against any database of real people, so an
+incidental resemblance cannot be ruled out. If you believe a portrait resembles a specific
+real person, please open an issue and it will be regenerated. Full method, content
+credentials and the limits of what was checked: [`design/drones/PROVENANCE.md`](design/drones/PROVENANCE.md).
+
 Nine characters, each with its own voice and role:
 
 - **Pulsar** — the host and orchestrator. The one you hear most of the time.

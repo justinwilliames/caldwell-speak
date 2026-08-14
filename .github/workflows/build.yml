@@ -3,13 +3,13 @@ name: Build Pulsar
 on:
   push:
     branches: [main]
-    paths:
-      - 'macos/Pulsar/**'
-      - '.github/workflows/build.yml'
+    # NO paths filter: it was macos/Pulsar/** and cast-check reads five files
+    # outside it (scripts/, design/, the embedded payload), so the commits that
+    # actually cause cast drift were the ones CI never ran on.
   pull_request:
-    paths:
-      - 'macos/Pulsar/**'
-      - '.github/workflows/build.yml'
+    # NO paths filter: it was macos/Pulsar/** and cast-check reads five files
+    # outside it (scripts/, design/, the embedded payload), so the commits that
+    # actually cause cast drift were the ones CI never ran on.
   workflow_dispatch:
 
 jobs:
@@ -66,11 +66,11 @@ jobs:
       - name: Run tests
         run: ./scripts/run-tests.sh
 
-      - name: Install Pillow (cast-check design-surface assertion)
+      - name: Install Pillow + numpy (cast-check design-surface assertions)
         # --break-system-packages: the runner's python3 is Homebrew's, which is
         # PEP 668 externally-managed — a bare `pip install` hard-fails there and
         # took every CI run red on 2026-07-30 while the tests themselves passed.
-        run: python3 -m pip install --quiet --break-system-packages Pillow
+        run: python3 -m pip install --quiet --break-system-packages Pillow numpy
 
       - name: Cast-consistency check
         run: ./scripts/cast-check.sh

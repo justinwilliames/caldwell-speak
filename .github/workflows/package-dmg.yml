@@ -40,8 +40,32 @@ jobs:
           fi
           echo "should_run=true" >> "$GITHUB_OUTPUT"
 
-  build:
+  gates:
+    # THE GATES THAT ACTUALLY BIND.
+    #
+    # This is the only workflow that reaches a user — it builds and publishes the
+    # .dmg. It used to run NO checks at all: run-tests.sh and cast-check.sh live in
+    # build.yml, which triggers on a push to main, and a TAG push is not a branch
+    # push. So every release shipped ungated while a green tick on main implied
+    # otherwise. Gates that do not run on the release path are decoration.
     needs: decide
+    if: needs.decide.outputs.should_run == 'true'
+    name: Gates (tests + cast)
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      # numpy as well as Pillow: without it cast-check's portrait-geometry
+      # assertion prints "NOT RUN" and exits 0, which is how it never ran once.
+      - name: Install Pillow + numpy
+        run: python3 -m pip install --quiet --break-system-packages Pillow numpy
+      - name: Unit tests
+        run: ./scripts/run-tests.sh
+      - name: Cast checks
+        run: ./scripts/cast-check.sh
+
+  build:
+    needs: [decide, gates]
     if: needs.decide.outputs.should_run == 'true'
     name: Build & package .dmg
     runs-on: macos-latest

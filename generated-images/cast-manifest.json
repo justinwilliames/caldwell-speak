@@ -1,0 +1,226 @@
+{
+  "cast_version": "v8",
+  "generator": "google/gemini-3-pro-image",
+  "reproducible": false,
+  "reproducibility_note": "gemini-3-pro-image accepts no seed. Re-running a prompt yields a different face. The archival masters are the authoritative assets; the prompts in scripts/cast-generate.py are the reproducible part of the record.",
+  "pipeline": [
+    "scripts/cast-generate.py   -> generated-images/<drone>-android-<ver>.png (JPEG bytes)",
+    "scripts/cast-provenance.py -> masters-archive/ + provenance metadata on derived PNGs",
+    "scripts/cast-align.py      -> <drone>-android-<ver>-aligned.png (iris-registered)",
+    "scripts/cast-gate.py       -> enforces the cast laws, exits non-zero on failure"
+  ],
+  "git_commit": "8b4113d1bf56817b6e0eec95afef5ded40b1d1e4",
+  "git_dirty": true,
+  "characters": {
+    "pulsar": {
+      "generator": "google/gemini-3-pro-image",
+      "seeded": false,
+      "prompt_sha256_16": "66493ef095f49539",
+      "archival_master": {
+        "path": "generated-images/masters-archive/pulsar-android-v8-master.jpg",
+        "format": "jpeg",
+        "sha256": "8a33e2c23ae3e016bf3ff49c2c16a09bb3215ef38f5a48eafb5ab1ac01a01ff3",
+        "bytes": 567550,
+        "c2pa": true,
+        "synthid": true,
+        "iptc_digitalSourceType": true
+      },
+      "derived": {
+        "path": "generated-images/pulsar-android-v8-aligned.png",
+        "format": "png",
+        "sha256": "8350646dcac31a483ebc1a672eac10c2f6f0dff9e083110ef69b249942571e36",
+        "bytes": 1314811,
+        "declares_provenance": true
+      }
+    },
+    "voyager": {
+      "generator": "google/gemini-3-pro-image",
+      "seeded": false,
+      "prompt_sha256_16": "98b1f431013d0ff3",
+      "archival_master": {
+        "path": "generated-images/masters-archive/voyager-android-v8-master.jpg",
+        "format": "jpeg",
+        "sha256": "d887932a1a0593b44cfbc95f62c527d7ea7f0bcec4d6d776b19e6c31c9cdd59a",
+        "bytes": 643988,
+        "c2pa": true,
+        "synthid": true,
+        "iptc_digitalSourceType": true
+      },
+      "derived": {
+        "path": "generated-images/voyager-android-v8-aligned.png",
+        "format": "png",
+        "sha256": "76a68875c19b69a59551c9a65815a248b941071c92c5f8c4eb645aa15ca2e782",
+        "bytes": 1381054,
+        "declares_provenance": true
+      }
+    },
+    "sentinel": {
+      "generator": "google/gemini-3-pro-image",
+      "seeded": false,
+      "prompt_sha256_16": "1461970840c94717",
+      "archival_master": {
+        "path": "generated-images/masters-archive/sentinel-android-v8-master.jpg",
+        "format": "jpeg",
+        "sha256": "36d36081f8201e95f72efadc585ab69f55a92222cc2178210625cc52a792cf4a",
+        "bytes": 585991,
+        "c2pa": true,
+        "synthid": true,
+        "iptc_digitalSourceType": true
+      },
+      "derived": {
+        "path": "generated-images/sentinel-android-v8-aligned.png",
+        "format": "png",
+        "sha256": "1deda45bf0701ebd65d42a19e7a9f3e5c0b688e5fc94893aedd8d42cfb4564bb",
+        "bytes": 1322494,
+        "declares_provenance": true
+      }
+    },
+    "nova": {
+      "generator": "google/gemini-3-pro-image",
+      "seeded": false,
+      "prompt_sha256_16": "401ba263c3f7fb5c",
+      "archival_master": {
+        "path": "generated-images/masters-archive/nova-android-v8-master.jpg",
+        "format": "jpeg",
+        "sha256": "42edded1cc272a01837b1c412311b004e33f5d5da91ab0c24fd31c31a590fe21",
+        "bytes": 576359,
+        "c2pa": true,
+        "synthid": true,
+        "iptc_digitalSourceType": true
+      },
+      "derived": {
+        "path": "generated-images/nova-android-v8-aligned.png",
+        "format": "png",
+        "sha256": "ff3a892bf116f7417db2f63e2d16ef6fc4063f12cd1a34a126d243330beb15b6",
+        "bytes": 1283133,
+        "declares_provenance": true
+      }
+    },
+    "nebula": {
+      "generator": "google/gemini-3-pro-image",
+      "seeded": false,
+      "prompt_sha256_16": "09d1510f9cb18ab0",
+      "archival_master": {
+        "path": "generated-images/masters-archive/nebula-android-v8-master.jpg",
+        "format": "jpeg",
+        "sha256": "002e866b29b6ca6320dc05dca0f4dd5b7136a354f619290f84d7d3c60346cabb",
+        "bytes": 648587,
+        "c2pa": true,
+        "synthid": true,
+        "iptc_digitalSourceType": true
+      },
+      "derived": {
+        "path": "generated-images/nebula-android-v8-aligned.png",
+        "format": "png",
+        "sha256": "7ff74d27b5778526fbe29e6d91cd4bab2f1de64e69bfdcfb8e227288028deb17",
+        "bytes": 1440833,
+        "declares_provenance": true
+      }
+    },
+    "echo": {
+      "generator": "google/gemini-3-pro-image",
+      "seeded": false,
+      "prompt_sha256_16": "e96cc657bc144a7e",
+      "archival_master": {
+        "path": "generated-images/masters-archive/echo-android-v8-master.jpg",
+        "format": "jpeg",
+        "sha256": "446072cf9f43065b36d91f5d27ff7a6f026f9c39149fe3ddd8e9a40391ca6b1b",
+        "bytes": 568213,
+        "c2pa": true,
+        "synthid": true,
+        "iptc_digitalSourceType": true
+      },
+      "derived": {
+        "path": "generated-images/echo-android-v8-aligned.png",
+        "format": "png",
+        "sha256": "a80c50590e682fab8e380ce267ca072bcccc5ee36cec5174956d17e50c8bd85e",
+        "bytes": 1225397,
+        "declares_provenance": true
+      }
+    },
+    "atlas": {
+      "generator": "google/gemini-3-pro-image",
+      "seeded": false,
+      "prompt_sha256_16": "0d7e4112e43a4ba6",
+      "archival_master": {
+        "path": "generated-images/masters-archive/atlas-android-v8-master.jpg",
+        "format": "jpeg",
+        "sha256": "399cbbca6ac50b8a15fbb1c4fab523498788acff95bc75dd95ff82162c1a2d5a",
+        "bytes": 630913,
+        "c2pa": true,
+        "synthid": true,
+        "iptc_digitalSourceType": true
+      },
+      "derived": {
+        "path": "generated-images/atlas-android-v8-aligned.png",
+        "format": "png",
+        "sha256": "089c875b8c656af004e335f508db4be23b5cbb7a295db275286d2f4fe5478f54",
+        "bytes": 1372133,
+        "declares_provenance": true
+      }
+    },
+    "iris": {
+      "generator": "google/gemini-3-pro-image",
+      "seeded": false,
+      "prompt_sha256_16": "b43b727c9647483d",
+      "archival_master": {
+        "path": "generated-images/masters-archive/iris-android-v8-master.jpg",
+        "format": "jpeg",
+        "sha256": "e85faedf886db8a75a7dff85c061ab75469797433301666bf3249fed03dc6e0d",
+        "bytes": 600407,
+        "c2pa": true,
+        "synthid": true,
+        "iptc_digitalSourceType": true
+      },
+      "derived": {
+        "path": "generated-images/iris-android-v8-aligned.png",
+        "format": "png",
+        "sha256": "eb8aacf74ecae67bfd3294c8618a51ecfb84acf4a0d4f83233b62ce427ae821a",
+        "bytes": 1309675,
+        "declares_provenance": true
+      }
+    },
+    "meridian": {
+      "generator": "google/gemini-3-pro-image",
+      "seeded": false,
+      "prompt_sha256_16": "341401cc22049d69",
+      "archival_master": {
+        "path": "generated-images/masters-archive/meridian-android-v8-master.jpg",
+        "format": "jpeg",
+        "sha256": "f5852e84a90b3fbafb41501f506863c88f807269966c1a19376296a8338c466c",
+        "bytes": 620596,
+        "c2pa": true,
+        "synthid": true,
+        "iptc_digitalSourceType": true
+      },
+      "derived": {
+        "path": "generated-images/meridian-android-v8-aligned.png",
+        "format": "png",
+        "sha256": "ae0a33ff06d0d415c00405186ddb4b9c2703cfd7ea105b545fa3f6fd3b2f365b",
+        "bytes": 1349286,
+        "declares_provenance": true
+      }
+    },
+    "vector": {
+      "generator": "google/gemini-3-pro-image",
+      "seeded": false,
+      "prompt_sha256_16": "4a48af4b7f5f7037",
+      "archival_master": {
+        "path": "generated-images/masters-archive/vector-android-v8-master.jpg",
+        "format": "jpeg",
+        "sha256": "dd4a90bcc2327f96612893f6597eb906392916b78fdd4e527e9b8c07b4f5efb7",
+        "bytes": 548087,
+        "c2pa": true,
+        "synthid": true,
+        "iptc_digitalSourceType": true
+      },
+      "derived": {
+        "path": "generated-images/vector-android-v8-aligned.png",
+        "format": "png",
+        "sha256": "d9dae67e1a9e8ed256e257f36272e53bcb552a700dee5bf066d85fd1fcb75b89",
+        "bytes": 1135889,
+        "declares_provenance": true
+      }
+    }
+  }
+}
