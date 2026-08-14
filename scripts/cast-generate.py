@@ -457,8 +457,18 @@ person who runs the room day to day, not the senior counsel who is consulted abo
 
 
 
+
+
+
+
+
+
 === AUTOMATED CORRECTION ===
 MATERIAL FAILURE — the body carried no warm metal and was rejected. Brass, bronze or aged copper is the cast's shared material signature: it must appear on the manufactured parts of the NECK, SHOULDERS AND COLLAR — plate edges, seam bolts, a jack housing, shoulder hardware — as a visible, unmistakable warm metal against the charcoal uniform. Not a faint tint, not a highlight; actual metal you could name.
+
+SILHOUETTE COLLISION — at menu-bar size this character is indistinguishable from a sibling, and was rejected. It must be recognisable as a THUMBNAIL, where all that survives is the outline, the hair mass, the headgear shape and the colour. Push the read-at-a-glance features hard apart from the rest of the cast: a distinctly different hair volume and outline, a different headgear profile, a different shoulder line. Detail that only appears at full resolution does not count.
+
+The character it collided with is MERIDIAN. Study meridian's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. PULSAR and MERIDIAN must be tellable apart by outline alone.
 === END CORRECTION ===
 """),
 
@@ -513,32 +523,8 @@ HIS EYEBROWS ARE ORDINARY HUMAN HAIR. Absolutely NO metal brow plate, NO steel e
 NO plated brow ridge, NO hardware of any kind sitting on or replacing the eyebrows — the
 previous render put metal eyebrows on him and they must not appear. Natural grey-flecked
 eyebrows on skin. His machine seams stay on the temples, cheekbones and jaw, never the brow.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-=== AUTOMATED CORRECTION ===
-FACE COLLISION — the underlying facial geometry is too close to another character's and was rejected by a landmark-distance check. Rebuild the face from different bones: change the face SHAPE (long vs square vs heart vs round), the eye spacing and set, the nose length and bridge width, the mouth width, the jaw angle and the brow height. Two people with different hair and the same skull are the same person in a wig.
-
-The character it collided with is PULSAR. Study pulsar's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. VOYAGER and PULSAR must be tellable apart by outline alone.
-=== END CORRECTION ===
 """),
+
 
 
 
@@ -921,20 +907,11 @@ plus two or three fine brushes slotted at the shoulder, nothing more.
 
 
 
+
 === AUTOMATED CORRECTION ===
-GLOW FAILURE — the last render was too bright and was rejected. Cut the emissive area back hard: keep the lit lining fine and thin, keep facial grooves narrow, and let the irises be the brightest thing. No broad blooms, no wide washes of colour, no glowing areas larger than a fingertip apart from the eyes.
-
-CRITICAL POSE FAILURE — THE LAST RENDER OF THIS CHARACTER WAS TURNED AWAY FROM CAMERA and was rejected by an automated head-pose check. The head must be PERFECTLY SQUARE TO CAMERA: zero yaw, zero rotation, both cheeks showing equally, both ears equally visible, the nose and mouth exactly on the vertical centreline, gaze straight down the lens. Think passport photograph. This overrides every compositional instinct.
-
-LIGHTING FAILURE — the key light was on the wrong side, or the face was lit flat and shadowless, and was rejected. The KEY LIGHT COMES FROM THE CHARACTER'S LEFT (the viewer's right), roughly forty-five degrees off axis and slightly above eye level. The far cheek falls into soft shadow about a stop down — visible modelling on the nose, the brow and the jaw. Flat frontal lighting reads as a snapshot and breaks the set.
-
 FACE COLLISION — the underlying facial geometry is too close to another character's and was rejected by a landmark-distance check. Rebuild the face from different bones: change the face SHAPE (long vs square vs heart vs round), the eye spacing and set, the nose length and bridge width, the mouth width, the jaw angle and the brow height. Two people with different hair and the same skull are the same person in a wig.
 
-The character it collided with is SENTINEL. Study sentinel's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. NEBULA and SENTINEL must be tellable apart by outline alone.
-
-EYE BRIGHTNESS FAILURE — the last render had irises that were too dark and was rejected by an automated brightness check. BOTH IRISES MUST BLAZE: a hot, saturated, self-luminous ring in the character's colour, near-white at its hottest, casting a visible coloured glow onto the lower eyelid and the inner corner of the eye socket. They are the brightest element on the entire face. A dim tinted eye, a dark coloured lens or a subtle shimmer all fail. The pupil remains a dark hole at the centre.
-
-COLOUR FAILURE — the rendered accent drifted off this character's locked colour and was rejected. The lit elements — iris rings, the fine collar and yoke piping, the facial grooves, the indicator lamp and the background spill — must ALL be the exact locked hex stated below. Do not shift it toward a neighbouring hue, do not stylise it, do not let the light temperature pull it. One colour, one character.
+The character it collided with is IRIS. Study iris's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. NEBULA and IRIS must be tellable apart by outline alone.
 === END CORRECTION ===
 """),
 
@@ -1173,55 +1150,8 @@ the walkie-talkie comms reference works and is her signature.
 UNIFORM TIER — EXECUTIVE: the standard charcoal tunic worn plain, pressed and closed to the
 throat, with coral piping at the collar and yoke seam. No webbing, no armour, no added straps —
 her only carried item is the shoulder-clipped broadcast handset.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-=== AUTOMATED CORRECTION ===
-GLOW FAILURE — the last render was too bright and was rejected. Cut the emissive area back hard: keep the lit lining fine and thin, keep facial grooves narrow, and let the irises be the brightest thing. No broad blooms, no wide washes of colour, no glowing areas larger than a fingertip apart from the eyes.
-
-LIGHTING FAILURE — the key light was on the wrong side, or the face was lit flat and shadowless, and was rejected. The KEY LIGHT COMES FROM THE CHARACTER'S LEFT (the viewer's right), roughly forty-five degrees off axis and slightly above eye level. The far cheek falls into soft shadow about a stop down — visible modelling on the nose, the brow and the jaw. Flat frontal lighting reads as a snapshot and breaks the set.
-
-COLOUR FAILURE — the rendered accent drifted off this character's locked colour and was rejected. The lit elements — iris rings, the fine collar and yoke piping, the facial grooves, the indicator lamp and the background spill — must ALL be the exact locked hex stated below. Do not shift it toward a neighbouring hue, do not stylise it, do not let the light temperature pull it. One colour, one character.
-=== END CORRECTION ===
 """),
+
 
 
 
@@ -1342,18 +1272,8 @@ complexion. Give him a NEATLY TRIMMED SILVER BEARD — full but close-cropped, c
 jaw and chin. He is the only bearded unit in the cast and that beard is what separates him
 from Pulsar at any size. It must not cross the lips: the moustache is trimmed clear of the
 upper lip and the mouth is fully visible, because these frames have to animate speech.
-
-
-
-
-
-
-=== AUTOMATED CORRECTION ===
-FACE COLLISION — the underlying facial geometry is too close to another character's and was rejected by a landmark-distance check. Rebuild the face from different bones: change the face SHAPE (long vs square vs heart vs round), the eye spacing and set, the nose length and bridge width, the mouth width, the jaw angle and the brow height. Two people with different hair and the same skull are the same person in a wig.
-
-The character it collided with is ATLAS. Study atlas's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. MERIDIAN and ATLAS must be tellable apart by outline alone.
-=== END CORRECTION ===
 """),
+
 
 
 
@@ -1399,43 +1319,6 @@ on the topmost priority card. Plus the lit lining of the uniform.
 
 UNIFORM TIER — EXECUTIVE: the standard charcoal tunic worn plain and immaculate, closed to the
 throat, with signal-red piping. No webbing, no armour, no added gear beyond the card-frame.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-=== AUTOMATED CORRECTION ===
-FACE COLLISION — the underlying facial geometry is too close to another character's and was rejected by a landmark-distance check. Rebuild the face from different bones: change the face SHAPE (long vs square vs heart vs round), the eye spacing and set, the nose length and bridge width, the mouth width, the jaw angle and the brow height. Two people with different hair and the same skull are the same person in a wig.
-
-The character it collided with is IRIS. Study iris's portrait and move DECISIVELY away from it — different face shape, different hair mass and outline, different headgear profile. VECTOR and IRIS must be tellable apart by outline alone.
-
-COLOUR FAILURE — the rendered accent drifted off this character's locked colour and was rejected. The lit elements — iris rings, the fine collar and yoke piping, the facial grooves, the indicator lamp and the background spill — must ALL be the exact locked hex stated below. Do not shift it toward a neighbouring hue, do not stylise it, do not let the light temperature pull it. One colour, one character.
-
-LIGHTING FAILURE — the key light was on the wrong side, or the face was lit flat and shadowless, and was rejected. The KEY LIGHT COMES FROM THE CHARACTER'S LEFT (the viewer's right), roughly forty-five degrees off axis and slightly above eye level. The far cheek falls into soft shadow about a stop down — visible modelling on the nose, the brow and the jaw. Flat frontal lighting reads as a snapshot and breaks the set.
-
-EYE BRIGHTNESS FAILURE — the last render had irises that were too dark and was rejected by an automated brightness check. BOTH IRISES MUST BLAZE: a hot, saturated, self-luminous ring in the character's colour, near-white at its hottest, casting a visible coloured glow onto the lower eyelid and the inner corner of the eye socket. They are the brightest element on the entire face. A dim tinted eye, a dark coloured lens or a subtle shimmer all fail. The pupil remains a dark hole at the centre.
-
-MATERIAL FAILURE — the body carried no warm metal and was rejected. Brass, bronze or aged copper is the cast's shared material signature: it must appear on the manufactured parts of the NECK, SHOULDERS AND COLLAR — plate edges, seam bolts, a jack housing, shoulder hardware — as a visible, unmistakable warm metal against the charcoal uniform. Not a faint tint, not a highlight; actual metal you could name.
-=== END CORRECTION ===
 """),
 
 

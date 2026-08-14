@@ -90,6 +90,28 @@ CORRECTIONS = {
         "EYES — hair worn closer to the skull, any hood or headgear low-profile and following "
         "the shape of the head, nothing stacked or piled on the crown. There must be clear "
         "empty space between the top of the head and the top of the picture."),
+    "glow too weak": (
+        "BACKGROUND GLOW FAILURE — the coloured haze behind this character was far too "
+        "faint and was rejected. Every unit in the cast sits against BLACK WITH A CLEAR "
+        "GLOW OF ITS OWN COLOUR behind the head and shoulders — deep, saturated and "
+        "obvious, like a coloured light source hidden behind them. Not a hint, not a "
+        "tint, not a grey background with a suggestion of colour. It must read as that "
+        "character's colour at a glance, while still fading to pure black before the "
+        "edges of the frame."),
+    "glow too strong": (
+        "BACKGROUND GLOW FAILURE — the coloured haze behind this character flooded the "
+        "frame and was rejected. Pull it back: the background reads BLACK first, with "
+        "the glow concentrated close behind the head and shoulders and fading to pure "
+        "black well before the frame edges. No wash across the whole picture."),
+    "glow is the wrong colour": (
+        "BACKGROUND COLOUR FAILURE — the glow behind this character was the WRONG HUE "
+        "and was rejected. The haze behind the head must be the character's own locked "
+        "colour stated at the end of this prompt — the SAME colour as their irises and "
+        "their lit uniform lining, not a neighbouring or complementary shade."),
+    "glow reaches the corners": (
+        "BACKGROUND FAILURE — the glow spread all the way into the corners of the frame. "
+        "It is a halo close behind the head and shoulders, not a wash: the four corners "
+        "of the picture must be PURE BLACK."),
     "head": (
         "HEAD SIZE FAILURE — the head was rendered at the wrong scale relative to the rest of "
         "the cast, and was rejected. Every portrait must sit at the SAME distance from camera: "
