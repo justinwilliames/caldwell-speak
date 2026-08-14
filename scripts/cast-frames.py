@@ -108,7 +108,11 @@ exactly as cell 1, EXCEPT cell 12 which is noted. Only the eyes and brows change
 
 WHAT MUST BE IDENTICAL IN ALL TWELVE CELLS — this is the whole point of the sheet:
   - the head is in EXACTLY the same position, at exactly the same size and angle
-  - identical framing and crop within each cell
+  - identical framing and crop within each cell, AND THE SAME CROP AS THE REFERENCE
+    IMAGE: head AND SHOULDERS, with the upper chest and shoulders filling the bottom
+    of every cell exactly as they do in the picture you were given. Do not tighten in
+    to a head-only portrait and do not leave the body out — a floating head is a
+    failure, however good the face is
   - identical lighting, identical key and rim, identical background
   - identical hair, headgear, hardware, uniform, and every lit element
   - identical skin, identical everything except the one feature named per cell
@@ -427,6 +431,21 @@ def verify(name, directory=None):
         eyes_worst = max(eyes_worst, (de[int(h * 0.28):int(h * 0.52), :] > 18).mean() * 100)
     if eyes_worst > 1.0:
         notes.append(f"eyes move while talking ({eyes_worst:.1f}%) — mouth frames must share mouth-0's eyes")
+
+    # 2c. the BODY must still be there. The sheet is asked to preserve the master's
+    #     crop, and on one character it quietly did not: Vector came back as a head
+    #     with almost no shoulders (28.7% of the bottom row was subject, against
+    #     86-97% for every sibling and 87.8% in her own master). She rendered as a
+    #     floating head in the swarm and nothing caught it.
+    gb = cv2.cvtColor(imgs[0], cv2.COLOR_BGR2GRAY)
+    body = (gb[int(h * 0.95):, :] > 28).mean() * 100
+    #     Threshold 45%, set in the measured gap: the real failure was 28.7% and the
+    #     narrowest legitimate silhouette is Sentinel at 54.7% (her hood is a tighter
+    #     outline than anyone else's shoulders). 55% was chosen before I had seen her
+    #     and condemned a character whose body is plainly there.
+    if body < 45.0:
+        notes.append(f"body missing: bottom row only {body:.0f}% subject (need 45%) — "
+                     f"the sheet cropped the shoulders off")
 
     # 3. the blink must leave the MOUTH exactly where mouth-0 has it.
     #    The blink is crossfaded over whatever mouth frame is showing, so a blink
