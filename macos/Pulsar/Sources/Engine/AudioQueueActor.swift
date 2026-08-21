@@ -525,19 +525,26 @@ actor AudioQueueActor {
     /// category never demotes a promoted label. `lastSeen` is always refreshed
     /// (the drone is genuinely live right now).
     ///
-    /// Centre-collision guard: "pulsar" is NOT a drone (no `DroneRegistry`
-    /// record), so every lookup falls through to the Pulsar defaults — indigo,
-    /// no badge, and `PortraitView` loads the pulsar frame set. A sub-agent
-    /// registering under that category therefore renders a pixel-identical
-    /// SECOND Pulsar in the orbit. `promoteInFlightDrone` has always rejected
-    /// "pulsar"; this path did not, which is how the duplicate got in. Normalise
-    /// to the generic "unknown" (grey, "?" badge) rather than dropping the
-    /// registration: the agent IS live, so it must keep its presence — and
-    /// "unknown" stays claimable by `promoteInFlightDrone` if the agent later
-    /// speaks under a real drone tag.
+    /// Twin guard: an uncategorisable agent must land on a category that OWNS
+    /// its own portrait, because the swarm renders one head per category and a
+    /// category without art has to borrow someone else's — which puts two
+    /// pixel-identical faces on the panel the moment the lender is also in
+    /// flight. That is exactly what "unknown" did: it borrowed Pulsar's frames
+    /// (two Pulsars), was repointed at Atlas's, and then twinned Atlas instead
+    /// (screenshot-confirmed 2026-08-21, live set `{3× atlas, 1× unknown}`
+    /// rendering as Pulsar + two identical Atlases).
+    ///
+    /// So the generic bucket IS Atlas — the generalist, which is what an
+    /// untyped agent is, and which the HTTP layer already degrades every
+    /// unrecognised category to. One identity, one face, no twin possible.
+    /// "pulsar" normalises here too (a sub-agent must never render a second
+    /// centre), as does "unknown" itself — the hook still emits it (see
+    /// scripts/subagent-start.sh) and old persisted stores still hold it, and
+    /// both funnel through here. Atlas stays claimable by
+    /// `promoteInFlightDrone` if the agent later speaks under a real drone tag.
     static func normalisedCategory(_ raw: String) -> String {
         let trimmed = raw.trimmingCharacters(in: .whitespaces).lowercased()
-        return (trimmed.isEmpty || trimmed == "pulsar") ? "unknown" : trimmed
+        return (trimmed.isEmpty || trimmed == "pulsar" || trimmed == "unknown") ? "atlas" : trimmed
     }
 
     func addInFlightDrone(id: String, category: String, sessionId: String? = nil) {

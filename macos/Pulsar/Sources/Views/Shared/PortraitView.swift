@@ -43,8 +43,7 @@ struct PortraitView: View {
         self.portraitManager = portraitManager
         self.droneName = droneName
         _frames = State(initialValue: PortraitView.loadFrames(droneName: droneName))
-        let resolvedBlink = droneName == "unknown" ? "pulsar" : droneName
-        _blinkFrame = State(initialValue: NSImage(named: "\(resolvedBlink)-blink"))
+        _blinkFrame = State(initialValue: NSImage(named: "\(PortraitView.frameSet(for: droneName))-blink"))
     }
 
     /// Exponentially-smoothed amplitude in 0…1, used to position across frames.
@@ -106,8 +105,7 @@ struct PortraitView: View {
             // face. Reload on any droneName change so the head always matches.
             .onChange(of: droneName) { _, newName in
                 frames = PortraitView.loadFrames(droneName: newName)
-                let resolvedBlink = newName == "unknown" ? "pulsar" : newName
-                blinkFrame = NSImage(named: "\(resolvedBlink)-blink")
+                blinkFrame = NSImage(named: "\(PortraitView.frameSet(for: newName))-blink")
                 // Reset blink state so an in-flight blink from the previous face
                 // doesn't fire over the incoming portrait. Defer the next blink
                 // past the swap window (~0.5s) so the eye-open frame settles first.
@@ -200,13 +198,28 @@ struct PortraitView: View {
 
     // MARK: - Loading
 
+    /// The art a category renders with. This is a LAST-RESORT net, not a
+    /// routing layer: every live path now folds `"unknown"` into `"atlas"`
+    /// before it reaches a view (`AudioQueueActor.normalisedCategory` for the
+    /// in-flight set, the /speak handler for queued lines), so nothing should
+    /// arrive here needing a borrowed face.
+    ///
+    /// The borrowing itself is the trap. The swarm draws one head per CATEGORY,
+    /// so a category with no art of its own puts a second identical face on the
+    /// panel the moment its lender is also in flight. Borrowing Pulsar's frames
+    /// gave two Pulsars (2026-08-19); repointing the borrow at Atlas gave two
+    /// Atlases (2026-08-21, live set `{3× atlas, 1× unknown}`). The fix was to
+    /// stop having two identities share one face at all — hence the folds above.
+    /// Keep this mapping only so a stale store or an older hook can't render a
+    /// broken monogram; do NOT add new categories to it.
+    static func frameSet(for droneName: String) -> String {
+        droneName == "unknown" ? "atlas" : droneName
+    }
+
     /// Loads `<droneName>-mouth-0…4` from the bundle. Returns an empty array if
     /// any frame is missing, which triggers the fallback monogram.
-    ///
-    /// `"unknown"` has no portrait art — it maps to the `"pulsar"` frame set so
-    /// the swarm renders a real neutral face instead of a broken monogram.
     private static func loadFrames(droneName: String = "pulsar") -> [NSImage] {
-        let name = droneName == "unknown" ? "pulsar" : droneName
+        let name = frameSet(for: droneName)
         var out: [NSImage] = []
         for i in 0..<5 {
             guard let img = NSImage(named: "\(name)-mouth-\(i)") else { return [] }

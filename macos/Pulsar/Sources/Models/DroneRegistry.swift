@@ -103,13 +103,13 @@ enum DroneRegistry {
               motion: MotionTrait(bobAmplitude: 2.2, bobFrequency: 1.15, activeScale: 2.45)), // coral-rose #F26178 — warm, rhythmic; ΔE76≥51 from every sibling
         Drone(category: "meridian", role: "counsel",    color: Color(red: 0.141, green: 0.259, blue: 0.478), voice: "Ralph",   badge: "L",
               motion: MotionTrait(bobAmplitude: 1.0, bobFrequency: 0.5,  activeScale: 2.3)),  // deep navy #24427A — near-still, slowest of the cast (counsel doesn't fidget); min ΔE76 41.8 vs pulsar-indigo
-        // "unknown" — a neutral catch-all for unrecognised agent categories.
-        // Desaturated mid-grey rim so it reads as "generic agent" without competing
-        // with any named drone hue. Shares Daniel's voice (Pulsar's), but voice does
-        // NOT drive the frame set — PortraitView keys on droneName directly. The
-        // frame loader maps droneName "unknown" → the "pulsar" frame set so it
-        // renders a real face instead of a broken monogram. No bespoke art needed.
-        // Still/neutral motion so it doesn't draw the eye away from active drones.
+        // "unknown" — LEGACY. No longer reachable as a live category: every
+        // entry point folds it into "atlas" (see AudioQueueActor.normalisedCategory
+        // and the /speak + /subagent/start handlers), because it owns no portrait
+        // and a category that borrows another's face renders as that drone's twin
+        // in the swarm. Kept only so colour/voice lookups on a stale persisted
+        // store or an older hook still resolve to something sane rather than the
+        // Pulsar defaults. Give it real art if it should ever be a character again.
         Drone(category: "unknown",  role: "agent",      color: Color(red: 0.58, green: 0.58, blue: 0.60), voice: "Daniel",   badge: "?",
               motion: MotionTrait(bobAmplitude: 1.2, bobFrequency: 0.75, activeScale: 2.3)),  // grey — neutral, visually recessive
     ]

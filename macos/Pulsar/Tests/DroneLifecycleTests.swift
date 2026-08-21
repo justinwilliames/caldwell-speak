@@ -164,10 +164,11 @@ func runAll() async {
     // assigns `inFlight` directly, so it bypasses both the /subagent/start degrade
     // and addInFlightDrone's guard — without normalising here, that entry puts a
     // second centre back in the orbit on every launch, surviving restarts.
-    await test("restore normalises a legacy \"pulsar\" entry (no centre resurrection)") {
+    await test("restore normalises legacy \"pulsar\"/\"unknown\" entries (no twin resurrection)") {
         let (_, store) = await makeActor()
         let legacy = """
         {"old1":{"category":"pulsar","lastSeen":\(Date().timeIntervalSince1970),"sessionId":"s1"},\
+        "old3":{"category":"unknown","lastSeen":\(Date().timeIntervalSince1970),"sessionId":"s1"},\
         "old2":{"category":"voyager","lastSeen":\(Date().timeIntervalSince1970),"sessionId":"s1"}}
         """
         try? legacy.write(to: store, atomically: true, encoding: .utf8)
@@ -176,7 +177,8 @@ func runAll() async {
         await restored.setDronesStoreOverride(store)
         await restored.restoreInFlight()
         let snap = await restored.inFlightDronesSnapshot()
-        await expect(snap["old1"] == "unknown", "legacy pulsar entry restores as unknown")
+        await expect(snap["old1"] == "atlas", "legacy pulsar entry restores as atlas")
+        await expect(snap["old3"] == "atlas", "legacy unknown entry restores as atlas — no borrowed face")
         await expect(snap["old2"] == "voyager", "real category survives restore untouched")
     }
 
@@ -230,22 +232,26 @@ func runAll() async {
         await expect(await actor.inFlightDronesSnapshot()["d1"] == "nova", "generic re-start doesn't demote")
     }
 
-    // Centre-collision guard: "pulsar" is the seat, not a drone. Registering a
-    // sub-agent under it used to render a pixel-identical SECOND Pulsar in the
-    // orbit (no DroneRegistry record → every lookup falls through to the Pulsar
-    // defaults, incl. the frame set). It must normalise to the generic
-    // "unknown" — presence kept, face de-duplicated, still claimable on speak.
-    await test("registering under \"pulsar\" normalises to unknown (no duplicate centre)") {
+    // Twin guard. The swarm draws one head per CATEGORY, so any category without
+    // its own portrait borrows another's — and renders as that drone's double the
+    // moment the lender is in flight too. "pulsar" borrowed the centre's face
+    // (two Pulsars); "unknown" then borrowed Atlas's (two Atlases, live set
+    // {3× atlas, 1× unknown}, 2026-08-21). Both must land on "atlas", which owns
+    // its art: presence kept, face unique, still claimable on speak.
+    await test("generic categories normalise to atlas (no duplicate face)") {
         let (actor, _) = await makeActor()
         await actor.addInFlightDrone(id: "p1", category: "pulsar")
-        await expect(await actor.inFlightDronesSnapshot()["p1"] == "unknown",
-                     "pulsar → unknown, never a second centre")
+        await expect(await actor.inFlightDronesSnapshot()["p1"] == "atlas",
+                     "pulsar → atlas, never a second centre")
         await actor.addInFlightDrone(id: "p2", category: "  PULSAR  ")
-        await expect(await actor.inFlightDronesSnapshot()["p2"] == "unknown",
+        await expect(await actor.inFlightDronesSnapshot()["p2"] == "atlas",
                      "case/whitespace variants normalise too")
         await actor.addInFlightDrone(id: "p3", category: "")
-        await expect(await actor.inFlightDronesSnapshot()["p3"] == "unknown",
-                     "empty category → unknown, not a blank centre")
+        await expect(await actor.inFlightDronesSnapshot()["p3"] == "atlas",
+                     "empty category → atlas, not a blank centre")
+        await actor.addInFlightDrone(id: "p4", category: "Unknown")
+        await expect(await actor.inFlightDronesSnapshot()["p4"] == "atlas",
+                     "unknown → atlas: no category may render a borrowed face")
         // Normalised-to-generic must stay claimable, or a real --agent line
         // later in that sub-agent's run could never fix the face.
         _ = await actor.promoteInFlightDrone(toCategory: "nova")

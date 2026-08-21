@@ -273,14 +273,14 @@ final class PulsarHTTPServer: @unchecked Sendable {
         let rawCategory = (body["category"] as? String).flatMap {
             $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0.lowercased()
         } ?? "atlas"
-        // Accept the explicit "unknown" category as a first-class value (another
-        // package emits it from the hook; the registry defines its look). Any
-        // OTHER category not in the locked taxonomy still degrades to "atlas" (the
+        // Any category outside the locked taxonomy degrades to "atlas" (the
         // generalist), so a garbage category renders a real Atlas drone rather
-        // than a broken monogram. "unknown" passes through untouched: registry
-        // lookups (colour/voice) fall back to Pulsar defaults for it, which is the
-        // correct rendering for a genuinely-unknown drone.
-        let category = (rawCategory == "unknown" || isDrone(rawCategory)) ? rawCategory : "atlas"
+        // than a broken monogram. "unknown" — which the hook emits when it can't
+        // categorise (scripts/subagent-start.sh) — degrades WITH them: it owns no
+        // portrait, so keeping it as a distinct category meant it borrowed
+        // another drone's face and twinned it on the panel. `normalisedCategory`
+        // enforces the same collapse for every other entry point.
+        let category = (isDrone(rawCategory) && rawCategory != "unknown") ? rawCategory : "atlas"
         // Session that spawned this sub-agent, if the hook supplied it. Stored so
         // claim-on-speak promotion can be session-scoped (a line from session A
         // shouldn't claim session B's generic drone). Absent → nil, best-effort.
@@ -1100,9 +1100,15 @@ final class PulsarHTTPServer: @unchecked Sendable {
         // Optional drone attribution. A drone category (e.g. "voyager") makes
         // that sibling drone the active speaker for this line; nil/"pulsar"
         // keeps the main Pulsar head speaking.
+        // "unknown" is folded into "atlas" on the way in, for the same reason the
+        // in-flight set folds it (see AudioQueueActor.normalisedCategory): it owns
+        // no portrait, so a line tagged with it would render Atlas's face under a
+        // different key — twinning a live Atlas in the swarm and in the queued
+        // thumbnails, which both dedupe by category. "pulsar" is NOT folded here:
+        // on this path it legitimately means the main head, not a sub-agent.
         let agentCategory = (body["agent"] as? String).flatMap {
             $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0
-        }
+        }.map { $0.lowercased() == "unknown" ? "atlas" : $0 }
         // The speaking sub-agent's session, from say.sh (CLAUDE_CODE_SESSION_ID).
         // Session-scopes the claim-on-speak promotion below. Absent → nil, and
         // promotion falls back to the old cross-session behaviour.
