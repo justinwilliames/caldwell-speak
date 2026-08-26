@@ -16,31 +16,51 @@ struct RosterView: View {
         let blurb: String
     }
 
-    /// Pulsar first (Orchestrator, indigo), then the six drones from the
+    /// Pulsar first (Chief of Staff, indigo), then the drones from the
     /// registry in canonical order. Blurbs describe each character's job.
     private var cast: [CastMember] {
         var out: [CastMember] = [
-            CastMember(id: "pulsar", name: "Pulsar", role: "Orchestrator",
+            CastMember(id: "pulsar", name: "Pulsar", role: "Chief of Staff",
                        color: .orbitLight,
-                       blurb: "Runs the show — plans the work, delegates to the drones, and narrates the session.")
+                       blurb: "Runs the show — plans the work, delegates, and narrates the session.")
         ]
         let blurbs: [String: String] = [
-            "voyager":  "Scouts the codebase — searches, explores, and reports back what it finds.",
-            "sentinel": "Reviews and analyses — audits, critiques, catches bugs and security issues, and checks whether the numbers actually say what they claim.",
-            "nova":     "Builds it — implements features, refactors, and gets the code compiling.",
-            "nebula":   "Makes it beautiful — design, images, icons, and visual polish.",
-            "echo":     "Writes it up — docs, changelogs, copy, and clear prose.",
-            "atlas":    "The all-rounder — picks up whatever general task needs doing.",
+            "voyager":  "Gets the data out — searches the code, follows the pipelines, reports what's there.",
+            "sentinel": "Checks the numbers — audits, catches bugs and security holes, tests every claim.",
+            "nova":     "Ships it — implements features, refactors, and gets the code compiling.",
+            "nebula":   "Makes it look right — design, images, icons, and visual polish.",
+            "echo":     "Finds the words — docs, changelogs, copy, and clear prose.",
+            "atlas":    "Fixes whatever's broken — the one who picks up the job nobody else has time for.",
             "iris":     "Runs marketing — brand, paid media, search, SEO, content, and the full lifecycle.",
             "meridian": "Keeps it defensible — legal, compliance, licences, and where the exposure hides.",
+            "vector":   "Decides what gets built — and, more often, what doesn't.",
         ]
         // `unknown` is an internal fallback for rendering an unrecognised agent in
         // the swarm — NOT a showcased team member. Keep it out of "Meet the team".
-        for drone in DroneRegistry.drones where drone.category != "unknown" {
+        // `pulsar` is prepended above with his own copy, and he is now ALSO a real
+        // DroneRegistry entry (he became spawnable), so looping the registry
+        // without excluding him listed him twice.
+        // Ordered by seniority, not by registry order (which is a colour/motion
+        // list and says nothing about the org). Pulsar is prepended above as Chief
+        // of Staff; the rest run leadership → product → engineering → design →
+        // go-to-market, with counsel last as the specialist who is consulted rather
+        // than staffed on the work.
+        let seniority = ["meridian", "vector", "sentinel", "voyager", "nova",
+                         "atlas", "nebula", "iris", "echo"]
+        let ranked = DroneRegistry.drones
+            .filter { $0.category != "unknown" && $0.category != "pulsar" }
+            .sorted { a, b in
+                let ia = seniority.firstIndex(of: a.category) ?? seniority.count
+                let ib = seniority.firstIndex(of: b.category) ?? seniority.count
+                return ia == ib ? a.category < b.category : ia < ib
+            }
+        for drone in ranked {
             out.append(CastMember(
                 id: drone.category,
                 name: drone.category.capitalized,
-                role: drone.role.capitalized,
+                // `role` is now a real job title, already correctly cased —
+                // `.capitalized` here would render "IT Support" as "It Support".
+                role: drone.role,
                 color: drone.color,
                 blurb: blurbs[drone.category] ?? ""))
         }
@@ -95,11 +115,19 @@ struct RosterView: View {
                     Text(member.role.uppercased())
                         .font(.system(size: 10.5, weight: .semibold, design: .rounded))
                         .tracking(0.8)
-                        .foregroundStyle(member.color)
+                        // Not the raw accent: it is the only channel carrying this
+                        // label and six of ten accents fail WCAG on this surface.
+                        .foregroundStyle(member.color.legible(on: .textBackgroundColor))
                 }
                 Text(member.blurb)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                    // Two lines, always: rows must stay the same height or the
+                    // roster reads as ragged. The copy above is written to fit,
+                    // and this stops a future edit silently pushing a row taller.
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+                    .fixedSize(horizontal: false, vertical: true)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)

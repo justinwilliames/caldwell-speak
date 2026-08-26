@@ -48,15 +48,30 @@ enum KokoroVoiceClient {
     ///
     /// Every id here MUST exist in `VoiceDownloader.availableVoices` or the
     /// download will 404 — `requiredVoices` is what the installer fetches.
+    /// Every drone must appear here. A category missing from this map falls through
+    /// to `pulsarVoice`, which does not fail — it just makes that drone sound
+    /// exactly like Pulsar, which is worse than an error because nothing reports it.
+    /// `vector` was missing and did precisely that.
+    ///
+    /// Casting notes, applying Justin's calls where Kokoro can:
+    ///   • sentinel → af_sarah: he asked for "the californian". American female.
+    ///   • nova     → bf_emma:  he asked for Irish. KOKORO HAS NO IRISH VOICE — the
+    ///     voice ids encode accent as American (a) or British (b) only. bf_emma is
+    ///     the nearest warm non-American female. Flagged rather than silently
+    ///     substituted.
+    ///   • nebula   → bf_alice: freed by sentinel's move.
+    ///   • atlas    → am_fenrir: the gruffest male in the installed set.
+    ///   • vector   → af_kore: her own voice, so she stops sounding like Pulsar.
     static let droneVoices: [String: String] = [
         "voyager":  "am_onyx",
-        "sentinel": "bf_alice",
-        "nova":     "af_sarah",
-        "nebula":   "bf_emma",
+        "sentinel": "af_sarah",
+        "nova":     "bf_emma",
+        "nebula":   "bf_alice",
         "echo":     "am_puck",
         "atlas":    "am_fenrir",
         "iris":     "af_heart",
         "meridian": "bm_george",
+        "vector":   "af_kore",
     ]
 
     /// Pulsar's own voice — British male, keeps the Daniel continuity.
@@ -355,12 +370,24 @@ enum KokoroVoiceClient {
     /// configured gap the ONLY thing that sets the pause.
     static func trimSilence(_ samples: [Float], threshold: Float = 0.004,
                             marginMs: Int = 25) -> [Float] {
-        guard let first = samples.firstIndex(where: { abs($0) > threshold }),
-              let last = samples.lastIndex(where: { abs($0) > threshold })
+        // TRAILING ONLY. The leading trim used to cut everything before the first
+        // sample above 0.004, keeping 25ms of margin — and a word that OPENS on a
+        // soft consonant starts below that threshold. The onset was being sliced
+        // off, so the word arrived clipped or, at small volumes, effectively
+        // missing. Justin heard it as whole words being skipped ("pre-header").
+        //
+        // Only multi-sentence lines are trimmed at all, which matches the symptom:
+        // it showed up on long lines and never on short ones.
+        //
+        // The trailing trim is the one that earns its place — it removes the dead
+        // air Kokoro leaves at the end of a sentence so the inter-sentence gap is
+        // the gap we asked for rather than that plus whatever it rendered. Cutting
+        // the START buys nothing: the sentence has to begin somewhere, and a few
+        // milliseconds of quiet before a plosive is what a plosive SOUNDS like.
+        guard let last = samples.lastIndex(where: { abs($0) > threshold })
         else { return samples }
         let margin = sampleRate * marginMs / 1000
-        let lo = max(0, first - margin)
         let hi = min(samples.count - 1, last + margin)
-        return Array(samples[lo...hi])
+        return Array(samples[0...hi])
     }
 }

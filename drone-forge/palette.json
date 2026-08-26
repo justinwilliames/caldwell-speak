@@ -1,0 +1,36 @@
+{
+  "name": "Sasha Trubetskoy \u2014 20 Simple, Distinct Colors (2017-01-11)",
+  "why": "Supplied by Justin on 2026-08-13 as the canonical colour source for the drone cast. It replaces hand-picked per-character hexes, which drifted into collisions twice: the cast ended up with three drones inside a 30-degree wedge of blue, and two inside 17 degrees of red. A published set designed for maximum mutual distinctness removes that failure mode entirely, and the spare ten are the expansion room for drones 11-20.",
+  "accessibility_tier": "95%",
+  "core_10": {
+    "red": "#E6194B",
+    "green": "#3CB44B",
+    "yellow": "#FFE119",
+    "blue": "#4363D8",
+    "orange": "#F58231",
+    "purple": "#911EB4",
+    "cyan": "#46F0F0",
+    "magenta": "#F032E6",
+    "lime": "#BCF60C",
+    "pink": "#FABEBE"
+  },
+  "reserve_10": {
+    "teal": "#469990",
+    "lavender": "#E6BEFF",
+    "brown": "#9A6324",
+    "beige": "#FFFAC8",
+    "maroon": "#800000",
+    "mint": "#AAFFC3",
+    "olive": "#808000",
+    "apricot": "#FFD8B1",
+    "navy": "#000075",
+    "grey": "#A9A9A9"
+  },
+  "notes": {
+    "cyan_variant": "The published 20-colour table lists cyan as #42D4F4; Justin's own list of ten gave #46F0F0. The active cast uses #46F0F0 because that is what he specified. Both are the same slot \u2014 do not treat them as two colours.",
+    "assignment_rule": "Assign by minimising total hue rotation from each character's existing identity, so nobody's look changes more than it must, and PIN any character whose colour is load-bearing before solving (pulsar carries the app's own brand blue). Do not add a second separation constraint on top \u2014 see collision_guard, which records why that failed. Never assign in list order; the list is not ranked.",
+    "collision_guard": "SUPERSEDED. An earlier version of this note told you to force flagged pairs 45 degrees apart in hue before assigning. That was wrong twice over: it moved the collision onto a different pair each time it ran, and a self-check showed FIVE pairs inside the palette itself failing the rule. The palette is designed for mutual distinctness \u2014 imposing a second metric on top of it is fighting the premise. Assign by closest identity, pin any character whose colour is load-bearing (pulsar carries the app's own brand blue), and trust the palette.",
+    "measure_hue_not_delta_e": "CIE Lab dE76 is the wrong metric for 'these two look the same'. It weighs lightness heavily, so it passed sentinel-vs-meridian at dE 47.6 and iris-vs-vector at dE 46.5 while a human read both pairs as one colour. Hue angle is what the eye reads for colour identity. Gate BOTH: dE for overall separation, hue angle for family separation.",
+    "separation_is_not_hue_alone": "Strong red #E6194B and light pink #FABEBE sit 15 degrees apart in hue and are still plainly different colours, because they differ by 36 points of lightness. That is how the palette works. Judge separation on hue AND lightness together, never hue alone \u2014 and do not reject a published-palette pair for failing a hue test it was never designed to pass."
+  }
+}

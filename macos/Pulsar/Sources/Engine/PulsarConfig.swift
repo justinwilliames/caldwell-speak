@@ -107,6 +107,7 @@ final class PulsarConfig: @unchecked Sendable {
     /// Config key for the synthesiser choice. Named here so KokoroModelManager can
     /// reset it without duplicating the string.
     static let voiceEngineKey = "PULSAR_VOICE_ENGINE"
+    static let panelOriginKey = "PULSAR_PANEL_ORIGIN"
 
     /// Which synthesiser the user picked, as a raw string ("native" / "kokoro").
     /// Empty when unset, which callers must read as "native" — a fresh install has
@@ -117,6 +118,23 @@ final class PulsarConfig: @unchecked Sendable {
     /// so a type dependency here would drag the whole MLX graph into the test
     /// harness and break it. `VoiceEngine.active` does the parsing, and also checks
     /// the model is actually on disk before honouring "kokoro".
+    /// Where the user last put the floating panel, as "x,y" in screen coordinates.
+    ///
+    /// The anchor used to live only in memory, so every relaunch threw the panel
+    /// back to the top-left corner — which the user noticed precisely because a
+    /// run of rebuilds kept moving it. A window position is a preference; it
+    /// belongs on disk.
+    var panelOrigin: CGPoint? {
+        let raw = lock.withLock { _config[Self.panelOriginKey] } ?? ""
+        let parts = raw.split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
+        guard parts.count == 2 else { return nil }
+        return CGPoint(x: parts[0], y: parts[1])
+    }
+
+    func setPanelOrigin(_ p: CGPoint) {
+        try? set(Self.panelOriginKey, value: "\(Int(p.x)),\(Int(p.y))")
+    }
+
     var voiceEngineRaw: String {
         (lock.withLock { _config[Self.voiceEngineKey] }
             ?? ProcessInfo.processInfo.environment[Self.voiceEngineKey]

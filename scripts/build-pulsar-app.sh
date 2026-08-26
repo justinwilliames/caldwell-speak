@@ -90,21 +90,42 @@ fi
 # instead of quietly shipping an app with no attribution.
 cp "$REPO_ROOT/THIRD-PARTY-NOTICES.md" "$APP_BUNDLE/Contents/Resources/THIRD-PARTY-NOTICES.md"
 
+# GUARD — every drone in the registry must have all six frame assets DECLARED in
+# Package.swift, not merely present on disk. SPM cannot glob resources, so the list
+# there is hand-written, and when the tenth drone was added every other stage of the
+# pipeline picked it up while that list did not. The app built clean, installed clean,
+# reported success, and shipped one drone that could not open its mouth. Fail loudly
+# here instead.
+REG="$REPO_ROOT/macos/Pulsar/Sources/Models/DroneRegistry.swift"
+PKG="$REPO_ROOT/macos/Pulsar/Package.swift"
+if [ -f "$REG" ] && [ -f "$PKG" ]; then
+  missing=""
+  for d in $(grep -oE 'Drone\(category: "[a-z]+"' "$REG" | sed 's/.*"\(.*\)"/\1/' | grep -v unknown); do
+    for f in mouth-0 mouth-1 mouth-2 mouth-3 mouth-4 blink; do
+      grep -q "Resources/$d-$f.png" "$PKG" || missing="$missing $d-$f"
+    done
+  done
+  if [ -n "$missing" ]; then
+    echo "ERROR: frame assets missing from Package.swift resources:$missing" >&2
+    echo "       Add a .copy(\"Resources/<name>.png\") line for each, or the drone ships mute." >&2
+    exit 1
+  fi
+  echo "Frame-asset guard: every registry drone has six declared assets."
+fi
+
 # OrbitLogo PNGs — copied by SPM into the build's resource bundle; extract
 # them into Contents/Resources/ so Bundle.main can find them via NSImage(named:).
 RESOURCE_BUNDLE="$(find "$APP_DIR/.build" -name "Pulsar_Pulsar.bundle" -path "*/release/*" 2>/dev/null | head -1)"
 if [ -n "$RESOURCE_BUNDLE" ] && [ -d "$RESOURCE_BUNDLE" ]; then
-  for f in OrbitLogo.png "OrbitLogo@2x.png" "OrbitLogo@3x.png" \
-           pulsar-mouth-0.png pulsar-mouth-1.png pulsar-mouth-2.png \
-           pulsar-mouth-3.png pulsar-mouth-4.png pulsar-blink.png \
-           voyager-mouth-0.png voyager-mouth-1.png voyager-mouth-2.png voyager-mouth-3.png voyager-mouth-4.png voyager-blink.png \
-           sentinel-mouth-0.png sentinel-mouth-1.png sentinel-mouth-2.png sentinel-mouth-3.png sentinel-mouth-4.png sentinel-blink.png \
-           nova-mouth-0.png nova-mouth-1.png nova-mouth-2.png nova-mouth-3.png nova-mouth-4.png nova-blink.png \
-           nebula-mouth-0.png nebula-mouth-1.png nebula-mouth-2.png nebula-mouth-3.png nebula-mouth-4.png nebula-blink.png \
-           echo-mouth-0.png echo-mouth-1.png echo-mouth-2.png echo-mouth-3.png echo-mouth-4.png echo-blink.png \
-           atlas-mouth-0.png atlas-mouth-1.png atlas-mouth-2.png atlas-mouth-3.png atlas-mouth-4.png atlas-blink.png \
-           iris-mouth-0.png iris-mouth-1.png iris-mouth-2.png iris-mouth-3.png iris-mouth-4.png iris-blink.png \
-           meridian-mouth-0.png meridian-mouth-1.png meridian-mouth-2.png meridian-mouth-3.png meridian-mouth-4.png meridian-blink.png; do
+  # Enumerate the frame assets by PATTERN, never by a hand-written list.
+  #
+  # This used to be an explicit list of nine characters x six frames. When the tenth
+  # drone (vector) was added, every other part of the pipeline picked it up and this
+  # list did not — so the app built clean, installed clean, reported success, and
+  # shipped with 54 of 60 assets and one drone that could not open its mouth. A
+  # hardcoded roster in a build script is a silent-failure generator; the glob cannot
+  # miss a character nobody remembered to add.
+  for f in $(cd "$RESOURCE_BUNDLE" 2>/dev/null && ls OrbitLogo*.png *-mouth-[0-4].png *-blink.png 2>/dev/null); do
     src="$RESOURCE_BUNDLE/$f"
     if [ -f "$src" ]; then
       cp "$src" "$APP_BUNDLE/Contents/Resources/$f"

@@ -10,3 +10,13 @@ __pycache__/
 # Internal engineering/team-review artifacts — never publish (contain internal notes)
 design/pulsar-team-*/
 design/team-review-*/
+
+# Cast pipeline working directories — large, regenerable, or superseded.
+# The APPROVED masters (generated-images/*-android-v8-aligned.png) and the
+# archival originals ARE committed: the generator takes no seed, so a lost
+# master cannot be reproduced. Everything below is intermediate.
+generated-images/best/
+generated-images/frame-sheets/
+generated-images/*-android-v5*.png
+generated-images/*-android-v6*.png
+generated-images/*-android-v7*.png

@@ -99,8 +99,60 @@ final class PulsarHTTPServer: @unchecked Sendable {
         let audioQueue = self.audioQueue
         let sseBroadcaster = self.sseBroadcaster
 
+        // RESTART THE LISTENER, AND IF IT WILL NOT COME BACK, DIE LOUDLY.
+        //
+        // This used to run the service once and, on any throw, NSLog and return.
+        // The Task ended, the listener was gone, and the PROCESS STAYED ALIVE —
+        // menu-bar icon present, UI responsive, and every `say.sh` silently doing
+        // nothing because 127.0.0.1:7865 was refusing connections. Reproduced in
+        // this state: process alive 3m58s, `lsof -iTCP:7865 -sTCP:LISTEN` empty,
+        // `curl /health` returning 000, and SIGTERM ignored — only SIGKILL cleared
+        // it. Worse, the LaunchAgent's KeepAlive{SuccessfulExit:false} supervises
+        // the PROCESS, not the service, so it saw a healthy process and never
+        // restarted anything. Pulsar was mute until a human noticed.
+        //
+        // So: retry the bind a few times with backoff (covers the transient case —
+        // a stale socket during a fast relaunch, a port held for a moment by the
+        // instance we just replaced), and if it still will not bind, exit(1). A
+        // non-zero exit is exactly what KeepAlive{SuccessfulExit:false} is waiting
+        // for, so the supervision that already exists does the job with nothing new
+        // to build. Crashing beats lying about being up.
         serverTask = Task.detached(priority: .userInitiated) {
-            do {
+            let maxAttempts = 5
+            for attempt in 1...maxAttempts {
+                do {
+                    try await Self.runServer(port: port,
+                                             audioQueue: audioQueue,
+                                             sseBroadcaster: sseBroadcaster)
+                    // runService() returning without throwing means a deliberate
+                    // shutdown (stop() cancels this task), so do not treat it as a
+                    // failure and do not restart.
+                    NSLog("[PulsarHTTP] server stopped cleanly")
+                    return
+                } catch is CancellationError {
+                    NSLog("[PulsarHTTP] server cancelled — shutting down")
+                    return
+                } catch {
+                    NSLog("[PulsarHTTP] listener failed (attempt \(attempt)/\(maxAttempts)): \(error)")
+                    if Task.isCancelled { return }
+                    if attempt < maxAttempts {
+                        // 0.5s, 1s, 2s, 4s
+                        let backoff = UInt64(0.5 * pow(2.0, Double(attempt - 1)) * 1_000_000_000)
+                        try? await Task.sleep(nanoseconds: backoff)
+                    }
+                }
+            }
+            NSLog("[PulsarHTTP] could not bind 127.0.0.1:\(port) after \(maxAttempts) attempts — "
+                  + "exiting so the LaunchAgent restarts us rather than leaving Pulsar mute")
+            exit(1)
+        }
+    }
+
+    /// One run of the HTTP service. Throws if the listener cannot bind or dies.
+    private static func runServer(port: Int,
+                                  audioQueue: AudioQueueActor,
+                                  sseBroadcaster: SSEBroadcaster) async throws {
+        do {
                 let router = Router()
                 // Auth gate FIRST — added before any route so it also covers
                 // 404s and any endpoint added later. Host allowlist on every
@@ -122,9 +174,6 @@ final class PulsarHTTPServer: @unchecked Sendable {
 
                 NSLog("[PulsarHTTP] starting on 127.0.0.1:\(port)")
                 try await app.runService()
-            } catch {
-                NSLog("[PulsarHTTP] server crashed: \(error)")
-            }
         }
     }
 
@@ -149,8 +198,6 @@ final class PulsarHTTPServer: @unchecked Sendable {
                 version: "swift-2.0",
                 queue_size: 0,
                 source: "swift",
-                native_voice: NativeVoiceClient.bestVoice(),
-                enhanced_installed: NativeVoiceClient.enhancedInstalled()
             ))
         }
 
@@ -229,6 +276,15 @@ final class PulsarHTTPServer: @unchecked Sendable {
 
         // GET /queue — current queue snapshot. Hook uses this to detect
         // in-flight plays before deciding whether to fire its own ping.
+        // POST /stop — shut up now. Kills the line being spoken and discards the
+        // backlog. Deliberately separate from mute, which HOLDS lines for later.
+        router.post("/stop") { _, _ -> Response in
+            let dropped = await audioQueue.stopAndClear()
+            await sseBroadcaster.broadcast(event: "queue_update", json: "{}")
+            struct StopResponse: ResponseEncodable { let stopped: Bool; let dropped: Int }
+            return try Self.json(StopResponse(stopped: true, dropped: dropped))
+        }
+
         router.get("/queue") { request, _ -> Response in
             return try await Self.handleQueue(request: request, audioQueue: audioQueue)
         }
@@ -720,8 +776,7 @@ final class PulsarHTTPServer: @unchecked Sendable {
                 update.canon_enabled != nil ||
                 update.floating_head_enabled != nil ||
                 update.subtitles_enabled != nil ||
-                update.show_active_agents != nil ||
-                update.native_voice != nil
+                update.show_active_agents != nil
         else {
             return try Self.json(ErrorResponse("No fields to update"), status: .badRequest)
         }
@@ -760,15 +815,10 @@ final class PulsarHTTPServer: @unchecked Sendable {
             if let showAgents = update.show_active_agents {
                 try config.set("PULSAR_SHOW_AGENTS", value: showAgents ? "1" : "0")
             }
-            if let nv = update.native_voice {
-                // Empty resets to auto; otherwise only accept an installed voice.
-                let trimmed = nv.trimmingCharacters(in: .whitespacesAndNewlines)
-                if trimmed.isEmpty || NativeVoiceClient.availableVoices().contains(where: {
-                    $0.caseInsensitiveCompare(trimmed) == .orderedSame
-                }) {
-                    try config.set("PULSAR_NATIVE_VOICE", value: trimmed)
-                }
-            }
+            // No native_voice write path: Kokoro is the only engine, and per-drone
+            // voices come from KokoroVoiceClient.droneVoices, not a user-set macOS
+            // voice name. Accepting one would silently store a preference nothing
+            // reads.
         } catch {
             return try Self.json(ErrorResponse(error.localizedDescription), status: .internalServerError)
         }
@@ -1236,13 +1286,10 @@ final class PulsarHTTPServer: @unchecked Sendable {
         return SettingsResponse(
             muted: config.isMuted,
             expletives_enabled: config.expletivesEnabled,
-            native_voice: NativeVoiceClient.bestVoice(),
-            enhanced_installed: NativeVoiceClient.enhancedInstalled(),
             canon_enabled: config.canonEnabled,
             floating_head_enabled: config.floatingHeadEnabled,
             subtitles_enabled: config.subtitlesEnabled,
             show_active_agents: config.showActiveAgents,
-            available_voices: NativeVoiceClient.voiceOptions(),
             voice_engine: VoiceEngine.active.rawValue,
             kokoro_supported: KokoroVoiceClient.isSupported,
             kokoro_installed: KokoroVoiceClient.isInstalled()
@@ -1342,8 +1389,6 @@ private struct HealthResponse: Encodable, Sendable {
     let version: String
     let queue_size: Int
     let source: String
-    let native_voice: String
-    let enhanced_installed: Bool
 }
 
 private struct ErrorResponse: Encodable, Sendable {
@@ -1517,13 +1562,10 @@ private struct CanonPickResponse: Encodable, Sendable {
 private struct SettingsResponse: Encodable, Sendable {
     let muted: Bool
     let expletives_enabled: Bool
-    let native_voice: String
-    let enhanced_installed: Bool
     let canon_enabled: Bool
     let floating_head_enabled: Bool
     let subtitles_enabled: Bool
     let show_active_agents: Bool
-    let available_voices: [NativeVoiceClient.VoiceOption]
     /// Which synthesiser is ACTUALLY live (`VoiceEngine.active`, i.e. already
     /// degraded to "native" if Kokoro is selected but not installed) — so a caller
     /// never has to infer it from the raw config.
@@ -1539,5 +1581,4 @@ private struct SettingsUpdateRequest: Decodable, Sendable {
     let floating_head_enabled: Bool?
     let subtitles_enabled: Bool?
     let show_active_agents: Bool?
-    let native_voice: String?
 }

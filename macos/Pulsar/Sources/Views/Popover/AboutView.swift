@@ -29,7 +29,7 @@ struct AboutView: View {
             }
 
             VStack(spacing: 10) {
-                Text("Pulsar speaks text aloud — powered by local macOS voices, driven by Claude Code hooks. Speaks bespoke lines as Pulsar, end of every turn.")
+                Text("Pulsar speaks text aloud — powered by Kokoro, an on-device neural voice, driven by Claude Code hooks. Nothing leaves this Mac. Speaks bespoke lines as Pulsar, end of every turn.")
                     .font(.callout)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)

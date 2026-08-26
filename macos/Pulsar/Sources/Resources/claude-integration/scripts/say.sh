@@ -79,6 +79,7 @@ while [[ $# -gt 0 ]]; do
     --cacheable)     CACHEABLE=true; shift ;;
     --canon)         ACTION="canon"; CANON_CONTEXT="$2"; shift 2 ;;
     --status)        ACTION="status"; shift ;;
+    --stop)         ACTION="stop"; shift ;;
     --skip)          ACTION="skip"; shift ;;
     --clear)         ACTION="clear"; shift ;;
     --pause)         ACTION="pause"; shift ;;
@@ -281,7 +282,7 @@ print(json.dumps(d))
     ;;
   speak)
     [[ -z "$TEXT" ]] && {
-      echo "Usage: say.sh \"text\" [--voice NAME] [--channel CH] [--agent DRONE] [--session NAME] [--session-ref ID] [--priority] [--cacheable]" >&2
+      echo "Usage: say.sh \"text\" [--voice NAME] [--channel CH] [--agent DRONE] [--session NAME] [--session-ref ID] [--priority] [--cacheable] | --stop" >&2
       echo "       say.sh --status | --skip | --clear | --pause | --resume" >&2
       echo "       say.sh --history [--limit N] | --replay ID" >&2
       echo "       say.sh --usage | --settings" >&2
@@ -319,10 +320,17 @@ print(json.dumps(d))
     BODY=$(python3 -c "
 import json, sys, re
 MAX_SPOKEN_CHARS = 200
+# Cutting at the last sentence end inside the budget is right ONLY when that
+# end sits near the budget. When the line opens with a short sentence ('Done.')
+# and the substance runs past the cap, the sentence rule threw the substance
+# away and spoke the one word — the line came out mangled, not merely trimmed.
+# So: honour a sentence boundary only in the last quarter of the budget,
+# otherwise fall back to the word boundary and keep the meaning.
+MIN_KEEP = int(MAX_SPOKEN_CHARS * 0.75)
 text = sys.argv[1]
 if len(text) > MAX_SPOKEN_CHARS:
     window = text[:MAX_SPOKEN_CHARS]
-    ends = list(re.finditer(r'[.!?](?:\s|\$)', window))
+    ends = [m for m in re.finditer(r'[.!?](?:\s|\$)', window) if m.end() >= MIN_KEEP]
     if ends:
         text = window[:ends[-1].end()].rstrip()
     else:
