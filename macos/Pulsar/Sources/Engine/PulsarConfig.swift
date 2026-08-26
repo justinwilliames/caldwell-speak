@@ -151,10 +151,12 @@ final class PulsarConfig: @unchecked Sendable {
     /// turn-end floor for turns the model didn't compose a bespoke line on.
     /// Off = bespoke-only: only the model's freshly composed lines speak (the
     /// default register). Speech is free (local `say`), so this is a style
-    /// choice, not a cost lever. Default on preserves today's behaviour.
+    /// choice, not a cost lever. Default ON — a fresh install must never end a
+    /// turn in total silence, and the opt-out idiom here has to match the other
+    /// display flags below or the meaning of a missing key flips with the flag.
     var canonEnabled: Bool {
-        let val = lock.withLock { _config["PULSAR_CANON_ENABLED"] } ?? "0"
-        return ["1", "true", "yes", "on"].contains(val.lowercased())
+        let val = lock.withLock { _config["PULSAR_CANON_ENABLED"] } ?? "1"
+        return !["0", "false", "no", "off", ""].contains(val.lowercased())
     }
 
     /// Whether the animated floating Pulsar head is shown on screen while it
