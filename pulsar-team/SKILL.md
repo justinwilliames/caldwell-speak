@@ -374,6 +374,18 @@ It reports each drone `live` / `✅ done` / `🔴 STALLED` from transcript-mtime
 `~/code/pulsar/scripts/say.sh "<bespoke in-character line>" --agent <category>`
 The line must be specific to the actual work — never generic. Keep it sparse: accept + real milestones + done — plus §1c cross-pollination beats (questions asked of, and answers given to, colleagues by name), which are always legitimate spoken lines.
 
+**NEVER INTRODUCE YOURSELF (Justin, 2026-08-14).** Do NOT open a spoken line with your
+name, your role, or both — no "Sentinel here", no "Nova. Software Engineer.", no
+"Iris, Growth and Lifecycle." The Pulsar app now prints the speaker's NAME AND ROLE
+inside the subtitle bubble on every single line, so saying it aloud spends the first
+two seconds of every utterance on information already on screen, in a format that
+gets stale the moment a role changes.
+
+Open with the CONTENT. "Gate's green, four findings, one blocker" — not "Sentinel
+here, the gate is green." The exception is §1c cross-pollination: addressing a
+COLLEAGUE by name is the point of those lines ("Meridian, does the SPAM Act cover
+this?"), and naming yourself is still unnecessary there — they can see who is asking.
+
 **Orchestrator round-boundary beats:** the running session (Pulsar, no `--agent`) fires ONE short `say.sh "<line>" --priority` at each round boundary — R1 launch, R1→R2, R2→R3, R3→R4, R4→R5, and the final tally — naming what just resolved ("Round two's in: the engineers merged their fixes; design settled the pill"). One phrase each, never more; the drones own the mid-round chatter. This keeps the conductor audible (~30% of lines in a full review) instead of silent until the wrap.
 
 ## 2b. The evidence gate and the bounded re-run (added 2026-08-01)
