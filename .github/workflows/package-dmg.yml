@@ -183,6 +183,19 @@ jobs:
           done
           echo "Copied Misaki lexicon bundle to Contents/Resources."
 
+          # MLX's Metal shader library. `swift build` cannot compile MLX's Metal
+          # kernels and fails silently, so the shaders are fetched prebuilt and
+          # placed beside the executable (MLX checks the binary's own directory
+          # first). CI never did this: every published DMG shipped without them,
+          # and since the macOS `say` fallback was removed on 2026-08-14 that means
+          # a DMG user's app installed and NEVER SPOKE. Fatal — Kokoro is the only
+          # engine, so there is nothing to degrade to.
+          if ! ./scripts/fetch-mlx-metallib.sh "$APP_PATH/Contents/MacOS/mlx.metallib"; then
+            echo "::error::could not fetch mlx.metallib — the DMG would ship MUTE"
+            exit 1
+          fi
+          echo "Embedded mlx.metallib ($(du -h "$APP_PATH/Contents/MacOS/mlx.metallib" | cut -f1))."
+
           # Claude voice-integration payload — the exact files the in-app
           # installer drops into ~/.claude (skill + hooks + say.sh + the
           # uninstall script for manual reversal). Mirrors build-pulsar-app.sh's

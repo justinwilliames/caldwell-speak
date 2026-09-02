@@ -20,19 +20,24 @@ final class PulsarConfig: @unchecked Sendable {
 
     // MARK: - Paths
 
-    /// Repo root: honour PULSAR_REPO_ROOT env var first, then default to
-    /// ~/code/pulsar. This locates BUNDLED CODE ASSETS (e.g. the drone
-    /// portrait frames under assets/portraits) — NOT mutable app state. Mutable
-    /// state (config.json, cache/) lives under `storageRoot` in Application
-    /// Support so the app works for DMG users with no checkout. Keep this here
-    /// only for read-only asset lookups relative to the source tree.
-    var repoRoot: URL {
-        if let env = ProcessInfo.processInfo.environment["PULSAR_REPO_ROOT"],
-           !env.isEmpty {
-            return URL(fileURLWithPath: env)
-        }
-        return URL(fileURLWithPath: NSHomeDirectory())
-            .appendingPathComponent("code/pulsar")
+    /// DEV-ONLY source tree, from `PULSAR_REPO_ROOT`. Nil for everyone else.
+    ///
+    /// This used to default to `~/code/pulsar`, which made an installed app read
+    /// assets out of a git checkout that only exists on the developer's machine —
+    /// and that is exactly how Pulsar lost its voice on 2026-09-02, when a disk
+    /// clean-up deleted the sibling `.build` tree the phonemiser was reading. An
+    /// installed app must resolve every asset inside its own bundle; a checkout
+    /// path is an override for local iteration, never a fallback.
+    var devRepoRoot: URL? {
+        guard let env = ProcessInfo.processInfo.environment["PULSAR_REPO_ROOT"],
+              !env.isEmpty else { return nil }
+        return URL(fileURLWithPath: env)
+    }
+
+    /// Read-only assets shipped inside the app (`Contents/Resources`). The only
+    /// place the running app should look for anything it did not create itself.
+    var bundledAssetsRoot: URL? {
+        Bundle.main.resourceURL
     }
 
     /// Mutable app-state root. Defaults to a per-user Application Support dir

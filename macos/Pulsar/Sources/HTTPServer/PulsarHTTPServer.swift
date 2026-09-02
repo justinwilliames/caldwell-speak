@@ -528,10 +528,23 @@ final class PulsarHTTPServer: @unchecked Sendable {
         let name = try context.parameters.require("name")
         let frame = try context.parameters.require("frame")
 
-        let portraitsRoot = PulsarConfig.shared.repoRoot
-            .appendingPathComponent("assets/portraits", isDirectory: true)
-            .resolvingSymlinksInPath()
-            .standardizedFileURL
+        // Bundled assets first, a dev checkout only when PULSAR_REPO_ROOT says so.
+        // This route used to read `~/code/pulsar/assets/portraits` unconditionally,
+        // so an installed app served portraits out of a git checkout — the same
+        // class of dependency that silenced the voice engine on 2026-09-02.
+        let candidateRoots = [PulsarConfig.shared.bundledAssetsRoot,
+                              PulsarConfig.shared.devRepoRoot]
+            .compactMap { $0 }
+            .map {
+                $0.appendingPathComponent("assets/portraits", isDirectory: true)
+                    .resolvingSymlinksInPath()
+                    .standardizedFileURL
+            }
+        guard let portraitsRoot = candidateRoots.first(where: {
+            FileManager.default.fileExists(atPath: $0.path)
+        }) else {
+            return try Self.json(ErrorResponse("not found"), status: .notFound)
+        }
         let portraitURL = portraitsRoot
             .appendingPathComponent(name, isDirectory: true)
             .appendingPathComponent(frame)

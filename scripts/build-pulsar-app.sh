@@ -198,17 +198,18 @@ ditto "$FRAMEWORK_SRC" "$APP_BUNDLE/Contents/Frameworks/Sparkle.framework"
 # precompiled shaders and colocate them with the executable — MLX checks the
 # binary's own directory FIRST (backend/metal/device.cpp), before any bundle path.
 #
-# Not fatal if it fails: Kokoro is the OPT-IN engine, and Pulsar still speaks via
-# macOS `say` without it. Better to ship a working app with one engine than to
-# fail the build over an optional one.
+# FATAL if it fails. This was a warning back when Kokoro was opt-in and macOS
+# `say` was the fallback. That fallback was deleted on 2026-08-14 ("remove MacOS
+# voices — make Kokoro compulsory"), so a missing metallib now means MLX dies at
+# first synthesis and the app is permanently mute, with nothing to degrade to.
 METALLIB_DEST="$APP_BUNDLE/Contents/MacOS/mlx.metallib"
 # Absolute path: the script cd's to $APP_DIR above, so a $0-relative path breaks.
-if "$SCRIPT_DIR/fetch-mlx-metallib.sh" "$METALLIB_DEST"; then
-  echo "Kokoro engine: Metal shaders embedded ($(du -h "$METALLIB_DEST" | cut -f1))."
-else
-  echo "Warning: could not fetch mlx.metallib — the Kokoro voice engine will be" >&2
-  echo "         unavailable in this build. macOS 'say' is unaffected." >&2
+if ! "$SCRIPT_DIR/fetch-mlx-metallib.sh" "$METALLIB_DEST"; then
+  echo "Error: could not fetch mlx.metallib. Kokoro is the ONLY voice engine, so" >&2
+  echo "       this app would install and never speak. Refusing to ship it." >&2
+  exit 1
 fi
+echo "Kokoro engine: Metal shaders embedded ($(du -h "$METALLIB_DEST" | cut -f1))."
 
 # Ad-hoc sign, inside-out: the embedded framework first (--deep catches its
 # nested XPC services + Updater.app + Autoupdate), then the whole app last so
