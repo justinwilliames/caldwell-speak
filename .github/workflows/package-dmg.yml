@@ -164,6 +164,25 @@ jobs:
             exit 1
           fi
 
+          # Misaki's G2P lexicon bundle. SwiftPM's Bundle.module looks beside the
+          # main bundle or at the runner's absolute .build path — neither exists on
+          # a user's machine, so without this copy every Kokoro line fails at
+          # synthesis and the app crashes on its first word (2026-09-02). Mirrors
+          # build-pulsar-app.sh; MisakiResources reads Contents/Resources first.
+          MISAKI_BUNDLE=$(find macos/Pulsar/.build -name "Misaki_Misaki.bundle" -path "*/release/*" 2>/dev/null | head -1)
+          if [ -z "$MISAKI_BUNDLE" ]; then
+            echo "::error::Misaki_Misaki.bundle not found — Kokoro would ship MUTE"
+            exit 1
+          fi
+          cp -R "$MISAKI_BUNDLE" "$APP_PATH/Contents/Resources/Misaki_Misaki.bundle"
+          for f in us_gold us_silver gb_gold gb_silver; do
+            if [ -z "$(find "$APP_PATH/Contents/Resources/Misaki_Misaki.bundle" -name "$f.json")" ]; then
+              echo "::error::$f.json missing from the shipped Misaki bundle"
+              exit 1
+            fi
+          done
+          echo "Copied Misaki lexicon bundle to Contents/Resources."
+
           # Claude voice-integration payload — the exact files the in-app
           # installer drops into ~/.claude (skill + hooks + say.sh + the
           # uninstall script for manual reversal). Mirrors build-pulsar-app.sh's

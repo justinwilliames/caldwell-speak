@@ -150,6 +150,30 @@ else
   echo "Warning: SPM resource bundle not found — OrbitLogo may not render." >&2
 fi
 
+# Misaki's G2P lexicon (us/gb gold+silver JSON) ships as its own SPM resource
+# bundle. SwiftPM's generated Bundle.module only looks beside the main bundle
+# (Pulsar.app/Misaki_Misaki.bundle — outside Contents/, which codesign rejects)
+# or at the absolute .build path of the machine that compiled it. The installed
+# app therefore phonemised through this checkout's .build tree for a week and
+# fell silent the day a disk clean-up deleted it (2026-09-02): every line failed
+# at synthesis, and a fresh launch crashed on its first word. Ship the bundle in
+# Contents/Resources, where MisakiResources looks first. Fatal if absent: Kokoro
+# is the only engine, so a missing lexicon is a mute app.
+MISAKI_BUNDLE="$(find "$APP_DIR/.build" -name "Misaki_Misaki.bundle" -path "*/release/*" 2>/dev/null | head -1)"
+if [ -z "$MISAKI_BUNDLE" ] || [ ! -d "$MISAKI_BUNDLE" ]; then
+  echo "Error: Misaki_Misaki.bundle not found under .build — Kokoro cannot phonemise without it." >&2
+  exit 1
+fi
+rm -rf "$APP_BUNDLE/Contents/Resources/Misaki_Misaki.bundle"
+cp -R "$MISAKI_BUNDLE" "$APP_BUNDLE/Contents/Resources/Misaki_Misaki.bundle"
+for f in us_gold us_silver gb_gold gb_silver; do
+  if [ -z "$(find "$APP_BUNDLE/Contents/Resources/Misaki_Misaki.bundle" -name "$f.json" 2>/dev/null)" ]; then
+    echo "Error: $f.json missing from the shipped Misaki bundle." >&2
+    exit 1
+  fi
+done
+echo "Copied Misaki lexicon bundle to Contents/Resources."
+
 # Embed Sparkle.framework. The binary loads @rpath/Sparkle.framework/... and
 # carries an @executable_path/../Frameworks rpath (set in Package.swift), so
 # the framework must live at Contents/Frameworks. The 0.2.0 attempt linked

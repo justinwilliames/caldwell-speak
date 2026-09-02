@@ -153,7 +153,7 @@ public final class Lexicon {
     }
 
     private static func loadLexicon(named name: String, mixed: Bool) throws -> [String: LexiconValue] {
-        guard let url = Bundle.module.url(forResource: name, withExtension: "json") else {
+        guard let url = MisakiResources.url(forResource: name, withExtension: "json") else {
             throw LexiconError.missingResource(name)
         }
         let data = try Data(contentsOf: url)
@@ -191,7 +191,7 @@ public final class Lexicon {
     }
 
     private static func loadLexicon(named name: String, mixed _: Bool) throws -> [String: String] {
-        guard let url = Bundle.module.url(forResource: name, withExtension: "json") else {
+        guard let url = MisakiResources.url(forResource: name, withExtension: "json") else {
             throw LexiconError.missingResource(name)
         }
         let data = try Data(contentsOf: url)

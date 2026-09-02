@@ -6,7 +6,10 @@
 // a repo that ships an MIT-licensed app.
 //
 // Trimmed from upstream: the test target is dropped (its directory is not
-// vendored). Sources/ and Resources/ are unmodified.
+// vendored). Resources/ is unmodified. Sources/ carries one local patch:
+// Lexicon.swift resolves its JSON through MisakiResources (ResourceBundle.swift)
+// instead of SwiftPM's Bundle.module, which cannot find the bundle inside an
+// installed .app and fatalErrors on first synthesis (2026-09-02).
 import PackageDescription
 
 let package = Package(
